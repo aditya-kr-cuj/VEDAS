@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VEDAS | Coaching Institute Platform</title>
+    <style>
+      :root {
+        --bg: #0f1b1f;
+        --bg-alt: #14252a;
+        --card: #1d3238;
+        --accent: #f4b860;
+        --accent-2: #86e3ce;
+        --text: #f5f5f5;
+        --muted: #b7c3c7;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Poppins", "Trebuchet MS", sans-serif;
+        background: radial-gradient(circle at top left, #1b2f35 0%, var(--bg) 55%);
+        color: var(--text);
+      }
+      header {
+        padding: 32px 8vw 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .logo {
+        font-weight: 700;
+        letter-spacing: 2px;
+      }
+      .hero {
+        padding: 32px 8vw 48px;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 32px;
+      }
+      .hero h1 {
+        font-size: 42px;
+        margin: 0 0 12px;
+      }
+      .hero p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .badge {
+        display: inline-block;
+        background: var(--accent);
+        color: #1a1a1a;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+      }
+      label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      input, select, textarea {
+        width: 100%;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #27424a;
+        background: #13242a;
+        color: var(--text);
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: var(--accent);
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .features {
+        padding: 0 8vw 48px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .feature {
+        padding: 16px;
+        border-radius: 12px;
+        background: var(--bg-alt);
+      }
+      .feature h3 {
+        margin: 0 0 8px;
+      }
+      @media (max-width: 980px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+        .features {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">VEDAS</div>
+      <div class="badge">Coaching Institute OS</div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h1>Run your institute like a modern company.</h1>
+        <p>
+          One platform for admissions, attendance, tests, performance, fees, and communication. Built
+          for local and city-level coaching institutes.
+        </p>
+        <div class="features">
+          <div class="feature">
+            <h3>Zero chaos</h3>
+            <p>Timetables, staff, and student records in one dashboard.</p>
+          </div>
+          <div class="feature">
+            <h3>Faster growth</h3>
+            <p>Digital admissions and payment tracking.</p>
+          </div>
+          <div class="feature">
+            <h3>Trust &amp; clarity</h3>
+            <p>Automated notices and exam insights.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Institute Registration</h2>
+        <p class="badge">KYC + Plan Selection</p>
+        <form class="grid" method="post" action="/api/v1/auth/register-institute">
+          <div>
+            <label>Institute Name</label>
+            <input name="instituteName" placeholder="Vedant Classes" required />
+          </div>
+          <div>
+            <label>Institute Slug</label>
+            <input name="instituteSlug" placeholder="vedant-classes" required />
+          </div>
+          <div>
+            <label>Owner Name</label>
+            <input name="ownerName" placeholder="Aditi Sharma" required />
+          </div>
+          <div>
+            <label>Owner Email</label>
+            <input name="ownerEmail" type="email" placeholder="owner@example.com" required />
+          </div>
+          <div>
+            <label>Owner Phone</label>
+            <input name="ownerPhone" placeholder="9876543210" />
+          </div>
+          <div>
+            <label>Password</label>
+            <input name="password" type="password" placeholder="StrongPassword123" required />
+          </div>
+          <div>
+            <label>Subscription Plan</label>
+            <select name="planKey">
+              <option value="starter">Starter</option>
+              <option value="growth">Growth</option>
+              <option value="pro">Pro</option>
+            </select>
+          </div>
+          <div>
+            <label>Address Line 1</label>
+            <input name="addressLine1" placeholder="Street / Area" />
+          </div>
+          <div>
+            <label>City</label>
+            <input name="city" placeholder="Indore" />
+          </div>
+          <div>
+            <label>State</label>
+            <input name="state" placeholder="Madhya Pradesh" />
+          </div>
+          <div>
+            <label>Pincode</label>
+            <input name="pincode" placeholder="452001" />
+          </div>
+          <div>
+            <label>KYC ID Number</label>
+            <input name="kycIdNumber" placeholder="GST/PAN/Aadhaar" />
+          </div>
+          <div>
+            <label>Custom Domain (optional)</label>
+            <input name="customDomain" placeholder="classes.example.com" />
+          </div>
+          <button type="submit">Create Institute</button>
+        </form>
+      </div>
+    </section>
+  </body>
+</html>
