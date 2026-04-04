@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: vedas_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vedas
+      POSTGRES_PASSWORD: vedas
+      POSTGRES_DB: vedas
+    ports:
+      - "5432:5432"
+    volumes:
+      - vedas_db_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: vedas_api
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgres://vedas:vedas@db:5432/vedas
+      JWT_ACCESS_SECRET: change-me-change-me-change-me-change-me
+      JWT_REFRESH_SECRET: change-me-change-me-change-me-change-me
+      ACCESS_TOKEN_TTL_MIN: 15
+      REFRESH_TOKEN_TTL_DAYS: 7
+      CORS_ORIGIN: http://localhost:3000
+      RESEND_API_KEY: ""
+      EMAIL_FROM: "VEDAS <no-reply@vedas.app>"
+      APP_BASE_URL: http://localhost:3000
+      SUPER_ADMIN_EMAIL: admin@vedas.io
+      SUPER_ADMIN_PASSWORD: ChangeMe123
+      SUPER_ADMIN_NAME: Platform Super Admin
+
+  web-admin:
+    build:
+      context: .
+      dockerfile: apps/web-admin/Dockerfile
+    container_name: vedas_web_admin
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:4000/api/v1
+    ports:
+      - "3000:3000"
+
+volumes:
+  vedas_db_data:

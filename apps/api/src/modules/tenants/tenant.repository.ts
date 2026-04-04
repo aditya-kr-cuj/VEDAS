@@ -108,4 +108,32 @@ export async function updateTenantProfile(payload: {
 }): Promise<void> {
   const { query } = await import('../../db/client.js');
   await query(
-    `\n      UPDATE tenants\n      SET\n        address_line1 = COALESCE($1, address_line1),\n        address_line2 = COALESCE($2, address_line2),\n        city = COALESCE($3, city),\n        state = COALESCE($4, state),\n        pincode = COALESCE($5, pincode),\n        kyc_id_number = COALESCE($6, kyc_id_number),\n        kyc_document_url = COALESCE($7, kyc_document_url),\n        custom_domain = COALESCE($8, custom_domain),\n        plan_key = COALESCE($9, plan_key),\n        updated_at = NOW()\n      WHERE id = $10\n    `,\n    [\n      payload.addressLine1 ?? null,\n      payload.addressLine2 ?? null,\n      payload.city ?? null,\n      payload.state ?? null,\n      payload.pincode ?? null,\n      payload.kycIdNumber ?? null,\n      payload.kycDocumentUrl ?? null,\n      payload.customDomain ?? null,\n      payload.planKey ?? null,\n      payload.tenantId\n    ]\n  );\n}\n*** End Patch"}}
+    `
+      UPDATE tenants
+      SET
+        address_line1 = COALESCE($1, address_line1),
+        address_line2 = COALESCE($2, address_line2),
+        city = COALESCE($3, city),
+        state = COALESCE($4, state),
+        pincode = COALESCE($5, pincode),
+        kyc_id_number = COALESCE($6, kyc_id_number),
+        kyc_document_url = COALESCE($7, kyc_document_url),
+        custom_domain = COALESCE($8, custom_domain),
+        plan_key = COALESCE($9, plan_key),
+        updated_at = NOW()
+      WHERE id = $10
+    `,
+    [
+      payload.addressLine1 ?? null,
+      payload.addressLine2 ?? null,
+      payload.city ?? null,
+      payload.state ?? null,
+      payload.pincode ?? null,
+      payload.kycIdNumber ?? null,
+      payload.kycDocumentUrl ?? null,
+      payload.customDomain ?? null,
+      payload.planKey ?? null,
+      payload.tenantId
+    ]
+  );
+}

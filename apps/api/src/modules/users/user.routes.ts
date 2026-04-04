@@ -6,10 +6,11 @@ import {
   listTenantUsersHandler,
   updateMyProfileHandler,
   updateUserNameHandler,
-  updateUserStatusHandler
+  updateUserStatusHandler,
+  updateUserRoleHandler
 } from './user.controller.js';
 import { validateBody } from '../../middleware/validate.js';
-import { updateProfileSchema, updateUserNameSchema, updateUserStatusSchema } from './user.schema.js';
+import { updateProfileSchema, updateUserNameSchema, updateUserRoleSchema, updateUserStatusSchema } from './user.schema.js';
 
 export const userRouter = Router();
 
@@ -30,6 +31,15 @@ userRouter.patch(
   authorize(['institute_admin']),
   validateBody(updateUserStatusSchema),
   asyncHandler(updateUserStatusHandler)
+);
+
+userRouter.patch(
+  '/:id/role',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  validateBody(updateUserRoleSchema),
+  asyncHandler(updateUserRoleHandler)
 );
 
 userRouter.put(

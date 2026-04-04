@@ -5,6 +5,7 @@ import { createPasswordResetToken, findValidPasswordResetToken, markPasswordRese
 import { HttpError } from '../../utils/http-error.js';
 import { createNotification, markNotificationSent } from '../notifications/notification.repository.js';
 import { sendEmail } from '../../utils/email.js';
+import { buildPasswordResetEmail } from '../../utils/email-templates.js';
 
 export async function requestPasswordReset(email: string) {
   const user = await findUserByEmail(email);
@@ -18,11 +19,12 @@ export async function requestPasswordReset(email: string) {
 
   await createPasswordResetToken({ userId: user.id, tokenHash, expiresAt });
 
+  const template = buildPasswordResetEmail({ fullName: user.full_name, token: rawToken });
   const notification = await createNotification({
     tenantId: user.tenant_id,
     recipientUserId: user.id,
-    subject: 'Reset your VEDAS password',
-    body: `Your reset token is: ${rawToken}`
+    subject: template.subject,
+    body: template.html
   });
 
   await sendEmail({ to: user.email, subject: notification.subject, body: notification.body });

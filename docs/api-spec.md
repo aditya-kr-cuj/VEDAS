@@ -66,6 +66,28 @@ Base URL: `/api/v1`
   - Purpose: Bulk create students via CSV string
   - Auth: Yes (`institute_admin`)
 
+## Students (File Upload + Profiles)
+
+- `POST /students/bulk-upload`
+  - Purpose: Bulk create students via CSV/XLSX file
+  - Auth: Yes (`institute_admin`)
+
+- `GET /students/csv-template`
+  - Purpose: Download CSV template
+  - Auth: Yes (`institute_admin`)
+
+- `GET /students/:id`
+  - Purpose: Get student profile details
+  - Auth: Yes (`institute_admin`)
+
+- `PUT /students/:id`
+  - Purpose: Update student profile details
+  - Auth: Yes (`institute_admin`)
+
+- `DELETE /students/:id`
+  - Purpose: Soft delete student (deactivate)
+  - Auth: Yes (`institute_admin`)
+
 ## Tenant
 
 - `GET /tenant/me`
@@ -94,6 +116,10 @@ Base URL: `/api/v1`
   - Purpose: Update user name/profile
   - Auth: Yes (`institute_admin`)
 
+- `PATCH /users/:id/role`
+  - Purpose: Change user role (student/teacher/staff)
+  - Auth: Yes (`institute_admin`)
+
 - `DELETE /users/:id`
   - Purpose: Delete user
   - Auth: Yes (`institute_admin`)
@@ -119,6 +145,10 @@ Base URL: `/api/v1`
 - `POST /notifications/send`
   - Purpose: Send email notification to a user
   - Auth: Yes (`institute_admin` or `teacher`)
+
+- `GET /notifications/my`
+  - Purpose: List notifications for current user
+  - Auth: Yes
 
 ## Courses
 
@@ -168,11 +198,55 @@ Base URL: `/api/v1`
   - Purpose: Assign student to batch
   - Auth: Yes (`institute_admin`)
 
+- `GET /batches/:id/students`
+  - Purpose: List students in a batch
+  - Auth: Yes (`institute_admin`)
+
+- `POST /batches/:id/assign-teacher`
+  - Purpose: Assign teacher to batch
+  - Auth: Yes (`institute_admin`)
+
+- `GET /batches/:id/teachers`
+  - Purpose: List teachers assigned to a batch
+  - Auth: Yes (`institute_admin`)
+
+- `DELETE /batches/:batchId/teachers/:teacherId`
+  - Purpose: Remove teacher from batch
+  - Auth: Yes (`institute_admin`)
+
 ## Super Admin
 
 - `GET /super-admin/tenants`
   - Purpose: Platform-level tenant summary
   - Auth: Yes (`super_admin`)
+
+## Staff
+
+- `GET /staff`
+  - Purpose: List staff members
+  - Auth: Yes (`institute_admin`)
+
+- `POST /staff`
+  - Purpose: Create staff member
+  - Auth: Yes (`institute_admin`)
+
+- `GET /staff/:id`
+  - Purpose: Get staff member
+  - Auth: Yes (`institute_admin`)
+
+- `PUT /staff/:id`
+  - Purpose: Update staff member
+  - Auth: Yes (`institute_admin`)
+
+- `DELETE /staff/:id`
+  - Purpose: Deactivate staff member
+  - Auth: Yes (`institute_admin`)
+
+## Teachers
+
+- `GET /teachers/:id/batches`
+  - Purpose: List batches for a teacher
+  - Auth: Yes (`institute_admin`)
 
 ## Standard Headers
 

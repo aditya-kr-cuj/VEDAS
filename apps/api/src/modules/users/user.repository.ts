@@ -136,3 +136,24 @@ export async function updateUserPassword(payload: { userId: string; passwordHash
     payload.userId
   ]);
 }
+
+export async function updateUserRole(
+  payload: { userId: string; tenantId: string; role: UserRole },
+  client?: PoolClient
+): Promise<void> {
+  if (client) {
+    await client.query('UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3', [
+      payload.role,
+      payload.userId,
+      payload.tenantId
+    ]);
+    return;
+  }
+
+  const { query } = await import('../../db/client.js');
+  await query('UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3', [
+    payload.role,
+    payload.userId,
+    payload.tenantId
+  ]);
+}

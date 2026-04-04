@@ -19,6 +19,8 @@ import type { UserRole } from '../../types/auth.js';
 import { createStudentProfile } from '../students/student.repository.js';
 import { createTeacherProfile } from '../teachers/teacher.repository.js';
 import { addDays } from '../../utils/date.js';
+import { buildVerificationEmail, buildWelcomeEmail } from '../../utils/email-templates.js';
+import { sendEmail } from '../../utils/email.js';
 import {
   createEmailVerificationToken,
   findValidEmailVerificationToken,
@@ -92,7 +94,17 @@ export async function registerInstituteAdmin(payload: {
 
   const accessToken = signAccessToken(toAuthPayload(registered.adminUser));
   const refreshToken = await issueRefreshToken(registered.adminUser.id);
-  const emailVerificationToken = await issueEmailVerificationToken(registered.adminUser.id);
+  const emailVerificationToken = await issueEmailVerificationToken({
+    userId: registered.adminUser.id,
+    fullName: registered.adminUser.full_name,
+    email: registered.adminUser.email
+  });
+
+  const welcome = buildWelcomeEmail({
+    fullName: registered.adminUser.full_name,
+    instituteName: registered.tenant.name
+  });
+  await sendEmail({ to: registered.adminUser.email, subject: welcome.subject, body: welcome.html });
 
   return {
     tenant: {
@@ -235,12 +247,15 @@ export async function createTenantUser(payload: {
   };
 }
 
-async function issueEmailVerificationToken(userId: string) {
+async function issueEmailVerificationToken(payload: { userId: string; fullName: string; email: string }) {
   const rawToken = generateSecureToken(32);
   const tokenHash = sha256(rawToken);
   const expiresAt = addDays(new Date(), 2);
 
-  await createEmailVerificationToken({ userId, tokenHash, expiresAt });
+  await createEmailVerificationToken({ userId: payload.userId, tokenHash, expiresAt });
+
+  const template = buildVerificationEmail({ fullName: payload.fullName, token: rawToken });
+  await sendEmail({ to: payload.email, subject: template.subject, body: template.html });
   return rawToken;
 }
 

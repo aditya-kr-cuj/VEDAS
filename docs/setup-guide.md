@@ -44,6 +44,15 @@ npm run dev --workspace @vedas/api
 Expected local URL:
 - `http://localhost:4000`
 
+## 6) Start Admin Frontend
+
+```bash
+npm run dev --workspace web-admin
+```
+
+Expected local URL:
+- `http://localhost:3000`
+
 ## 6) Test Health Endpoint
 
 ```bash
@@ -58,4 +67,3 @@ Expected response:
   "timestamp": "2026-03-29T00:00:00.000Z"
 }
 ```
-

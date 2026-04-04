@@ -11,3 +11,7 @@ export const updateUserStatusSchema = z.object({
 export const updateUserNameSchema = z.object({
   fullName: z.string().min(3).max(100)
 });
+
+export const updateUserRoleSchema = z.object({
+  role: z.enum(['student', 'teacher', 'staff'])
+});

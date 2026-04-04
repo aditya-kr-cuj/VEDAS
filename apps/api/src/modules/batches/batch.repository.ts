@@ -117,3 +117,32 @@ export async function assignStudentToBatch(payload: {
     [payload.batchId, rows[0].id]
   );
 }
+
+export async function listStudentsForBatch(payload: {
+  tenantId: string;
+  batchId: string;
+}): Promise<
+  Array<{
+    studentUserId: string;
+    fullName: string;
+    email: string;
+    assignedAt: Date;
+  }>
+> {
+  return query(
+    `
+      SELECT
+        u.id AS "studentUserId",
+        u.full_name AS "fullName",
+        u.email AS "email",
+        bs.created_at AS "assignedAt"
+      FROM batch_students bs
+      JOIN students s ON s.id = bs.student_id
+      JOIN users u ON u.id = s.user_id AND u.tenant_id = s.tenant_id
+      JOIN batches b ON b.id = bs.batch_id AND b.tenant_id = s.tenant_id
+      WHERE b.tenant_id = $1 AND b.id = $2
+      ORDER BY bs.created_at DESC
+    `,
+    [payload.tenantId, payload.batchId]
+  );
+}

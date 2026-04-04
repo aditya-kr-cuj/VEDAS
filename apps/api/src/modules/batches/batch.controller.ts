@@ -1,6 +1,13 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../../utils/http-error.js';
-import { assignStudentToBatch, createBatch, deleteBatch, listBatches, updateBatch } from './batch.repository.js';
+import {
+  assignStudentToBatch,
+  createBatch,
+  deleteBatch,
+  listBatches,
+  listStudentsForBatch,
+  updateBatch
+} from './batch.repository.js';
 
 export async function createBatchHandler(req: Request, res: Response): Promise<void> {
   const tenantId = req.tenantId;
@@ -71,4 +78,14 @@ export async function assignStudentHandler(req: Request, res: Response): Promise
   });
 
   res.status(200).json({ message: 'Student assigned to batch' });
+}
+
+export async function listBatchStudentsHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) {
+    throw new HttpError(400, 'Tenant context is required');
+  }
+
+  const students = await listStudentsForBatch({ tenantId, batchId: req.params.id });
+  res.status(200).json({ students });
 }

@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { query } from '../../db/client.js';
 
 export interface TeacherRecord {
   id: string;
@@ -24,4 +25,21 @@ export async function createTeacherProfile(
   );
 
   return result.rows[0];
+}
+
+export async function findTeacherProfileByUserId(
+  tenantId: string,
+  userId: string
+): Promise<TeacherRecord | null> {
+  const rows = await query<TeacherRecord>(
+    `
+      SELECT *
+      FROM teachers
+      WHERE tenant_id = $1 AND user_id = $2
+      LIMIT 1
+    `,
+    [tenantId, userId]
+  );
+
+  return rows[0] ?? null;
 }

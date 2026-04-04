@@ -7,9 +7,17 @@ import {
   createBatchHandler,
   deleteBatchHandler,
   listBatchesHandler,
+  listBatchStudentsHandler,
   updateBatchHandler
 } from './batch.controller.js';
 import { assignStudentSchema, createBatchSchema, updateBatchSchema } from './batch.schema.js';
+import {
+  assignTeacherToBatchHandler,
+  listTeachersForBatchHandler,
+  removeTeacherFromBatchHandler
+} from './batch-teacher.controller.js';
+import { assignTeacherToBatchSchema, batchIdParamSchema, batchTeacherParamsSchema } from './batch-teacher.schema.js';
+import { validateParams } from '../../middleware/validate.js';
 
 export const batchRouter = Router();
 
@@ -48,4 +56,41 @@ batchRouter.post(
   authorize(['institute_admin']),
   validateBody(assignStudentSchema),
   asyncHandler(assignStudentHandler)
+);
+
+batchRouter.get(
+  '/:id/students',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  validateParams(batchIdParamSchema),
+  asyncHandler(listBatchStudentsHandler)
+);
+
+batchRouter.post(
+  '/:id/assign-teacher',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  validateParams(batchIdParamSchema),
+  validateBody(assignTeacherToBatchSchema),
+  asyncHandler(assignTeacherToBatchHandler)
+);
+
+batchRouter.delete(
+  '/:batchId/teachers/:teacherId',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  validateParams(batchTeacherParamsSchema),
+  asyncHandler(removeTeacherFromBatchHandler)
+);
+
+batchRouter.get(
+  '/:id/teachers',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  validateParams(batchIdParamSchema),
+  asyncHandler(listTeachersForBatchHandler)
 );

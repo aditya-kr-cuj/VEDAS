@@ -3,11 +3,16 @@ import {
   deleteUser,
   listUsersByTenant,
   listUsersByTenantAndRole,
+  findUserById,
   setUserActiveStatus,
   updateUserName,
-  updateUserProfile
+  updateUserProfile,
+  updateUserRole
 } from './user.repository.js';
 import { HttpError } from '../../utils/http-error.js';
+import { createStudentProfile, findStudentProfileByUserId } from '../students/student.repository.js';
+import { createTeacherProfile, findTeacherProfileByUserId } from '../teachers/teacher.repository.js';
+import { withTransaction } from '../../db/client.js';
 
 export async function listTenantUsersHandler(req: Request, res: Response): Promise<void> {
   const tenantId = req.tenantId;
@@ -76,4 +81,41 @@ export async function deleteUserHandler(req: Request, res: Response): Promise<vo
 
   await deleteUser({ userId: req.params.id, tenantId });
   res.status(200).json({ message: 'User deleted' });
+}
+
+export async function updateUserRoleHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) {
+    throw new HttpError(400, 'Tenant context is required');
+  }
+
+  const user = await findUserById(req.params.id);
+  if (!user || user.tenant_id !== tenantId) {
+    throw new HttpError(404, 'User not found');
+  }
+
+  if (user.role === 'super_admin' || user.role === 'institute_admin') {
+    throw new HttpError(403, 'Cannot change role for this user');
+  }
+
+  const role = req.body.role as 'student' | 'teacher' | 'staff';
+  await withTransaction(async (client) => {
+    await updateUserRole({ userId: user.id, tenantId, role }, client);
+
+    if (role === 'student') {
+      const existing = await findStudentProfileByUserId(tenantId, user.id);
+      if (!existing) {
+        await createStudentProfile(client, { tenantId, userId: user.id });
+      }
+    }
+
+    if (role === 'teacher') {
+      const existing = await findTeacherProfileByUserId(tenantId, user.id);
+      if (!existing) {
+        await createTeacherProfile(client, { tenantId, userId: user.id });
+      }
+    }
+  });
+
+  res.status(200).json({ message: 'User role updated' });
 }

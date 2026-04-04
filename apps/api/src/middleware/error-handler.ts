@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { MulterError } from 'multer';
 import { HttpError } from '../utils/http-error.js';
 
 export function notFoundHandler(_req: Request, res: Response): void {
@@ -22,6 +23,16 @@ export function errorHandler(
 
   if (err instanceof HttpError) {
     res.status(err.statusCode).json({ message: err.message });
+    return;
+  }
+
+  if (err instanceof MulterError) {
+    res.status(400).json({ message: err.message });
+    return;
+  }
+
+  if (err instanceof Error && err.message === 'Only .csv or .xlsx files are allowed') {
+    res.status(400).json({ message: err.message });
     return;
   }
 

@@ -2,14 +2,21 @@
 
 ## Unit Tests (Critical Modules)
 
-Covered in `apps/api/src/__tests__/utils.test.ts`:
-- CSV parsing utility
-- Date helpers used for token expiry
+Jest + Supertest tests added:
+- Auth service (register/login/refresh)
+- User routes (list + role change)
+- Batch-teacher assignment route
+
+Files:
+- `apps/api/src/__tests__/auth.service.jest.test.ts`
+- `apps/api/src/__tests__/user.routes.jest.test.ts`
+- `apps/api/src/__tests__/batch-teacher.routes.jest.test.ts`
 
 Run tests:
 
 ```bash
 npm run test --workspace @vedas/api
+npm run test:jest --workspace @vedas/api
 ```
 
 ## Future Test Targets (Phase 2)
