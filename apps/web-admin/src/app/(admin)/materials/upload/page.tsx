@@ -19,6 +19,10 @@ export default function MaterialUploadPage() {
   const [batchId, setBatchId] = useState("");
   const [topic, setTopic] = useState("");
   const [tags, setTags] = useState("");
+  const [tagOptions, setTagOptions] = useState<Array<{ id: string; tag_name: string; color?: string }>>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<Record<string, boolean>>({});
+  const [categoryOptions, setCategoryOptions] = useState<Array<{ id: string; category_name: string; parent_category_id?: string | null }>>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Record<string, boolean>>({});
   const [isPublic, setIsPublic] = useState(true);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<Record<string, boolean>>({});
@@ -33,6 +37,10 @@ export default function MaterialUploadPage() {
     api.get("/users", { params: { role: "student" } })
       .then((res) => setStudents(res.data.users ?? []))
       .catch(() => setStudents([]));
+    api.get("/materials/tags").then((res) => setTagOptions(res.data.tags ?? [])).catch(() => setTagOptions([]));
+    api.get("/materials/categories")
+      .then((res) => setCategoryOptions(res.data.categories ?? []))
+      .catch(() => setCategoryOptions([]));
   }, []);
 
   useEffect(() => {
@@ -50,6 +58,16 @@ export default function MaterialUploadPage() {
   const selectedStudentIds = useMemo(
     () => Object.entries(selectedStudents).filter(([, value]) => value).map(([id]) => id),
     [selectedStudents]
+  );
+
+  const selectedTagIdList = useMemo(
+    () => Object.entries(selectedTagIds).filter(([, value]) => value).map(([id]) => id),
+    [selectedTagIds]
+  );
+
+  const selectedCategoryIdList = useMemo(
+    () => Object.entries(selectedCategoryIds).filter(([, value]) => value).map(([id]) => id),
+    [selectedCategoryIds]
   );
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -72,6 +90,8 @@ export default function MaterialUploadPage() {
     if (batchId) form.append("batch_id", batchId);
     if (topic) form.append("topic", topic);
     if (tags) form.append("tags", tags);
+    if (selectedTagIdList.length) form.append("tag_ids", JSON.stringify(selectedTagIdList));
+    if (selectedCategoryIdList.length) form.append("category_ids", JSON.stringify(selectedCategoryIdList));
     form.append("is_public", String(isPublic));
 
     try {
@@ -96,6 +116,8 @@ export default function MaterialUploadPage() {
       setDescription("");
       setTopic("");
       setTags("");
+      setSelectedTagIds({});
+      setSelectedCategoryIds({});
       setBatchId("");
       setSelectedStudents({});
       setProgress(0);
@@ -186,11 +208,45 @@ export default function MaterialUploadPage() {
                 onChange={(event) => setDescription(event.target.value)}
               />
             </div>
-            <div className="md:col-span-2">
-              <Label>Tags (comma separated)</Label>
-              <Input value={tags} onChange={(event) => setTags(event.target.value)} />
+          <div className="md:col-span-2">
+            <Label>Tags (comma separated)</Label>
+            <Input value={tags} onChange={(event) => setTags(event.target.value)} />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Tag Library</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {tagOptions.map((tag) => (
+                <label key={tag.id} className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedTagIds[tag.id])}
+                    onChange={(event) =>
+                      setSelectedTagIds((prev) => ({ ...prev, [tag.id]: event.target.checked }))
+                    }
+                  />
+                  {tag.tag_name}
+                </label>
+              ))}
             </div>
           </div>
+          <div className="md:col-span-2">
+            <Label>Categories</Label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {categoryOptions.map((category) => (
+                <label key={category.id} className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedCategoryIds[category.id])}
+                    onChange={(event) =>
+                      setSelectedCategoryIds((prev) => ({ ...prev, [category.id]: event.target.checked }))
+                    }
+                  />
+                  {category.category_name}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
 
           <div className="flex flex-wrap items-center gap-4">
             <label className="flex items-center gap-2 text-sm text-slate-300">
@@ -228,6 +284,42 @@ export default function MaterialUploadPage() {
             {uploadStatus && <p className="text-xs text-slate-400">{uploadStatus}</p>}
             <Button onClick={upload}>Upload Material</Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <h3 className="text-lg font-semibold text-white">Bulk Upload</h3>
+          <p className="text-sm text-slate-400">Upload multiple files at once. Titles are auto-extracted from filenames.</p>
+          <input
+            type="file"
+            multiple
+            onChange={async (event) => {
+              const files = event.target.files;
+              if (!files || files.length === 0) return;
+              if (!courseId) {
+                setUploadStatus("Select a course before bulk upload.");
+                return;
+              }
+              const form = new FormData();
+              Array.from(files).forEach((f) => form.append("files", f));
+              form.append("course_id", courseId);
+              if (batchId) form.append("batch_id", batchId);
+              form.append("is_public", String(isPublic));
+              if (selectedTagIdList.length) form.append("tag_ids", JSON.stringify(selectedTagIdList));
+              if (selectedCategoryIdList.length) form.append("category_ids", JSON.stringify(selectedCategoryIdList));
+              try {
+                const res = await api.post("/materials/bulk-upload", form, {
+                  headers: { "Content-Type": "multipart/form-data" }
+                });
+                setUploadStatus(`Bulk upload completed. ${res.data.success}/${res.data.total} files uploaded.`);
+                const recent = await api.get("/materials", { params: { page: 1, limit: 5 } });
+                setRecentMaterials(recent.data.materials ?? []);
+              } catch {
+                setUploadStatus("Bulk upload failed.");
+              }
+            }}
+          />
         </CardContent>
       </Card>
 

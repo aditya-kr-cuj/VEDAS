@@ -5,18 +5,29 @@ import {
   canTeacherAccessMaterial,
   canTeacherManageMaterial,
   createMaterial,
+  createTag,
+  createCategory,
   findMaterialById,
+  getTagNamesByIds,
+  listTags,
+  listCategories,
   getMaterialDownloadHistory,
   getMostDownloadedMaterials,
   getPerStudentDownloadReport,
   grantMaterialAccess,
   isTeacherAssignedToCourse,
+  listMaterialVersions,
+  materialAnalyticsSummary,
   listMaterials,
   listMaterialsForTeacher,
   listMaterialsForStudent,
   searchMaterialsForAdmin,
   searchMaterialsForStudent,
   searchMaterialsForTeacher,
+  saveMaterialVersion,
+  toggleBookmark,
+  removeBookmark,
+  listBookmarks,
   recordDownload,
   softDeleteMaterial,
   updateMaterial
@@ -61,6 +72,8 @@ export async function uploadMaterialHandler(req: Request, res: Response): Promis
   const batchId = req.body.batch_id?.toString() ?? null;
   const topic = req.body.topic?.toString() ?? undefined;
   const tags = parseTags(req.body.tags);
+  const tagIds = req.body.tag_ids ? parseTags(req.body.tag_ids) : req.body.tagIds;
+  const categoryIds = req.body.category_ids ? parseTags(req.body.category_ids) : req.body.categoryIds;
   const isPublic = parseBoolean(req.body.is_public);
 
   if (!title || !courseId) {
@@ -83,6 +96,7 @@ export async function uploadMaterialHandler(req: Request, res: Response): Promis
     tenantId
   });
 
+  const tagNames = tagIds?.length ? await getTagNamesByIds({ tenantId, tagIds }) : [];
   const material = await createMaterial({
     tenantId,
     title,
@@ -94,8 +108,11 @@ export async function uploadMaterialHandler(req: Request, res: Response): Promis
     courseId,
     batchId,
     topic,
-    tags,
+    tags: tagNames.length ? tagNames.map((t) => t.tag_name) : tags,
     isPublic
+    ,
+    tagIds: Array.isArray(tagIds) ? tagIds : undefined,
+    categoryIds: Array.isArray(categoryIds) ? categoryIds : undefined
   });
 
   res.status(201).json({ material });
@@ -335,11 +352,18 @@ export async function updateMaterialHandler(req: Request, res: Response): Promis
     description: req.body.description,
     topic: req.body.topic,
     tags: req.body.tags ? parseTags(req.body.tags) : undefined,
+    tagIds: req.body.tagIds ?? req.body.tag_ids,
+    categoryIds: req.body.categoryIds ?? req.body.category_ids,
     isPublic: req.body.is_public !== undefined ? parseBoolean(req.body.is_public) : undefined
   });
   if (!parsed.success) {
     throw new HttpError(400, parsed.error.errors.map((e) => e.message).join(', '));
   }
+
+  const tagsFromIds =
+    parsed.data.tagIds?.length && !parsed.data.tags
+      ? (await getTagNamesByIds({ tenantId, tagIds: parsed.data.tagIds })).map((t) => t.tag_name)
+      : parsed.data.tags;
 
   await updateMaterial({
     tenantId,
@@ -347,7 +371,9 @@ export async function updateMaterialHandler(req: Request, res: Response): Promis
     title: parsed.data.title,
     description: parsed.data.description,
     topic: parsed.data.topic,
-    tags: parsed.data.tags,
+    tags: tagsFromIds,
+    tagIds: parsed.data.tagIds,
+    categoryIds: parsed.data.categoryIds,
     isPublic: parsed.data.isPublic
   });
 
@@ -400,6 +426,188 @@ export async function grantAccessHandler(req: Request, res: Response): Promise<v
   });
 
   res.status(200).json({ message: 'Access updated' });
+}
+
+export async function createTagHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const tag = await createTag({
+    tenantId,
+    tagName: req.body.tagName,
+    color: req.body.color
+  });
+  res.status(201).json({ tag });
+}
+
+export async function listTagsHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const tags = await listTags(tenantId);
+  res.status(200).json({ tags });
+}
+
+export async function createCategoryHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const category = await createCategory({
+    tenantId,
+    categoryName: req.body.categoryName,
+    parentCategoryId: req.body.parentCategoryId
+  });
+  res.status(201).json({ category });
+}
+
+export async function listCategoriesHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const categories = await listCategories(tenantId);
+  res.status(200).json({ categories });
+}
+
+export async function updateMaterialFileHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  const userId = req.auth?.userId;
+  if (!tenantId || !userId) throw new HttpError(400, 'Tenant context is required');
+  if (!req.file) throw new HttpError(400, 'File is required');
+
+  if (req.role === 'teacher') {
+    const canManage = await canTeacherManageMaterial({
+      tenantId,
+      materialId: req.params.id,
+      userId
+    });
+    if (!canManage) throw new HttpError(403, 'Teachers can only update their materials');
+  }
+
+  const uploaded = await uploadToS3({
+    buffer: req.file.buffer,
+    filename: req.file.originalname,
+    mimeType: req.file.mimetype,
+    size: req.file.size,
+    tenantId
+  });
+
+  const version = await saveMaterialVersion({
+    tenantId,
+    materialId: req.params.id,
+    fileType: uploaded.fileType,
+    fileUrl: uploaded.url,
+    fileSize: req.file.size
+  });
+
+  res.status(200).json({ message: 'Material updated', version });
+}
+
+export async function listMaterialVersionsHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const versions = await listMaterialVersions({ tenantId, materialId: req.params.id });
+  res.status(200).json({ versions });
+}
+
+export async function bookmarkMaterialHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const student = await findStudentProfileByUserId(tenantId, req.auth?.userId ?? '');
+  if (!student) throw new HttpError(404, 'Student profile not found');
+  await toggleBookmark({ tenantId, materialId: req.params.id, studentId: student.id });
+  res.status(200).json({ message: 'Bookmarked' });
+}
+
+export async function removeBookmarkHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const student = await findStudentProfileByUserId(tenantId, req.auth?.userId ?? '');
+  if (!student) throw new HttpError(404, 'Student profile not found');
+  await removeBookmark({ tenantId, materialId: req.params.id, studentId: student.id });
+  res.status(200).json({ message: 'Removed' });
+}
+
+export async function listBookmarksHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const student = await findStudentProfileByUserId(tenantId, req.auth?.userId ?? '');
+  if (!student) throw new HttpError(404, 'Student profile not found');
+  const rows = await listBookmarks({ tenantId, studentId: student.id });
+  const materials = await Promise.all(
+    rows.map(async (row: any) => ({
+      ...row,
+      download_url: await getSignedDownloadUrl(row.file_url)
+    }))
+  );
+  res.status(200).json({ materials });
+}
+
+export async function analyticsSummaryHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const from = req.query.from?.toString() ?? new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const to = req.query.to?.toString() ?? new Date().toISOString().slice(0, 10);
+  const summary = await materialAnalyticsSummary({ tenantId, from, to });
+  res.status(200).json({ summary });
+}
+
+export async function bulkUploadMaterialsHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  const userId = req.auth?.userId;
+  if (!tenantId || !userId) throw new HttpError(400, 'Tenant context is required');
+  const files = req.files as Express.Multer.File[] | undefined;
+  if (!files || files.length === 0) throw new HttpError(400, 'Files are required');
+
+  const courseId = req.body.course_id?.toString();
+  const batchId = req.body.batch_id?.toString() ?? null;
+  const isPublic = parseBoolean(req.body.is_public);
+  const topic = req.body.topic?.toString() ?? undefined;
+  const tagIds = req.body.tag_ids ? parseTags(req.body.tag_ids) : req.body.tagIds;
+  const categoryIds = req.body.category_ids ? parseTags(req.body.category_ids) : req.body.categoryIds;
+
+  if (!courseId) throw new HttpError(400, 'course_id is required');
+
+  if (req.role === 'teacher') {
+    const allowed = await isTeacherAssignedToCourse({ tenantId, userId, courseId });
+    if (!allowed) throw new HttpError(403, 'Teacher not assigned to this course');
+  }
+
+  const tagNames = tagIds?.length ? await getTagNamesByIds({ tenantId, tagIds }) : [];
+  const tags = tagNames.length ? tagNames.map((t) => t.tag_name) : [];
+
+  const created: any[] = [];
+  const errors: Array<{ file: string; error: string }> = [];
+
+  for (const file of files) {
+    try {
+      const title = file.originalname.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ').trim();
+      const uploaded = await uploadToS3({
+        buffer: file.buffer,
+        filename: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        tenantId
+      });
+
+      const material = await createMaterial({
+        tenantId,
+        title,
+        description: req.body.description?.toString() ?? undefined,
+        fileType: uploaded.fileType,
+        fileUrl: uploaded.url,
+        fileSize: file.size,
+        uploadedBy: userId,
+        courseId,
+        batchId,
+        topic,
+        tags,
+        isPublic,
+        tagIds: Array.isArray(tagIds) ? tagIds : undefined,
+        categoryIds: Array.isArray(categoryIds) ? categoryIds : undefined
+      });
+      created.push(material);
+    } catch (error) {
+      errors.push({ file: file.originalname, error: error instanceof Error ? error.message : 'Failed' });
+    }
+  }
+
+  res.status(201).json({ total: files.length, success: created.length, failed: errors.length, materials: created, errors });
 }
 
 export async function downloadMaterialHandler(req: Request, res: Response): Promise<void> {

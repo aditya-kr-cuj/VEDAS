@@ -52,33 +52,57 @@ export async function createMaterial(payload: {
   topic?: string;
   tags: string[];
   isPublic: boolean;
+  tagIds?: string[];
+  categoryIds?: string[];
 }): Promise<MaterialRecord> {
-  const rows = await query<MaterialRecord>(
-    `
-      INSERT INTO study_materials (
-        tenant_id, title, description, file_type, file_url, file_size,
-        uploaded_by, course_id, batch_id, topic, tags, is_public
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-      RETURNING *
-    `,
-    [
-      payload.tenantId,
-      payload.title,
-      payload.description ?? null,
-      payload.fileType,
-      payload.fileUrl,
-      payload.fileSize,
-      payload.uploadedBy,
-      payload.courseId,
-      payload.batchId ?? null,
-      payload.topic ?? null,
-      JSON.stringify(payload.tags ?? []),
-      payload.isPublic
-    ]
-  );
+  return withTransaction(async (client) => {
+    const rows = await client.query<MaterialRecord>(
+      `
+        INSERT INTO study_materials (
+          tenant_id, title, description, file_type, file_url, file_size,
+          uploaded_by, course_id, batch_id, topic, tags, is_public
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        RETURNING *
+      `,
+      [
+        payload.tenantId,
+        payload.title,
+        payload.description ?? null,
+        payload.fileType,
+        payload.fileUrl,
+        payload.fileSize,
+        payload.uploadedBy,
+        payload.courseId,
+        payload.batchId ?? null,
+        payload.topic ?? null,
+        JSON.stringify(payload.tags ?? []),
+        payload.isPublic
+      ]
+    );
 
-  return rows[0];
+    const material = rows.rows[0];
+
+    if (payload.tagIds?.length) {
+      for (const tagId of payload.tagIds) {
+        await client.query(
+          `INSERT INTO material_tag_links (material_id, tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+          [material.id, tagId]
+        );
+      }
+    }
+
+    if (payload.categoryIds?.length) {
+      for (const categoryId of payload.categoryIds) {
+        await client.query(
+          `INSERT INTO material_category_links (material_id, category_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+          [material.id, categoryId]
+        );
+      }
+    }
+
+    return material;
+  });
 }
 
 export async function listMaterials(payload: {
@@ -755,6 +779,8 @@ export async function updateMaterial(payload: {
   description?: string;
   topic?: string;
   tags?: string[];
+  tagIds?: string[];
+  categoryIds?: string[];
   isPublic?: boolean;
 }) {
   const fields: string[] = [];
@@ -786,15 +812,37 @@ export async function updateMaterial(payload: {
     throw new HttpError(400, 'No updates provided');
   }
 
-  values.push(payload.tenantId, payload.materialId);
-  await query(
-    `
-      UPDATE study_materials
-      SET ${fields.join(', ')}, updated_at = NOW()
-      WHERE tenant_id = $${idx} AND id = $${idx + 1} AND is_deleted = FALSE
-    `,
-    values
-  );
+  await withTransaction(async (client) => {
+    values.push(payload.tenantId, payload.materialId);
+    await client.query(
+      `
+        UPDATE study_materials
+        SET ${fields.join(', ')}, updated_at = NOW()
+        WHERE tenant_id = $${idx} AND id = $${idx + 1} AND is_deleted = FALSE
+      `,
+      values
+    );
+
+    if (payload.tagIds) {
+      await client.query(`DELETE FROM material_tag_links WHERE material_id = $1`, [payload.materialId]);
+      for (const tagId of payload.tagIds) {
+        await client.query(
+          `INSERT INTO material_tag_links (material_id, tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+          [payload.materialId, tagId]
+        );
+      }
+    }
+
+    if (payload.categoryIds) {
+      await client.query(`DELETE FROM material_category_links WHERE material_id = $1`, [payload.materialId]);
+      for (const categoryId of payload.categoryIds) {
+        await client.query(
+          `INSERT INTO material_category_links (material_id, category_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+          [payload.materialId, categoryId]
+        );
+      }
+    }
+  });
 }
 
 export async function softDeleteMaterial(payload: { tenantId: string; materialId: string }) {
@@ -890,6 +938,191 @@ export async function canTeacherManageMaterial(payload: {
     [payload.tenantId, payload.materialId, payload.userId]
   );
   return Boolean(rows[0]);
+}
+
+export async function createTag(payload: { tenantId: string; tagName: string; color?: string }) {
+  const rows = await query(
+    `
+      INSERT INTO material_tags (tenant_id, tag_name, color)
+      VALUES ($1,$2,$3)
+      ON CONFLICT (tenant_id, tag_name) DO UPDATE SET color = EXCLUDED.color
+      RETURNING *
+    `,
+    [payload.tenantId, payload.tagName, payload.color ?? null]
+  );
+  return rows[0];
+}
+
+export async function listTags(tenantId: string) {
+  return query(`SELECT * FROM material_tags WHERE tenant_id = $1 ORDER BY tag_name ASC`, [tenantId]);
+}
+
+export async function createCategory(payload: {
+  tenantId: string;
+  categoryName: string;
+  parentCategoryId?: string;
+}) {
+  const rows = await query(
+    `
+      INSERT INTO material_categories (tenant_id, category_name, parent_category_id)
+      VALUES ($1,$2,$3)
+      RETURNING *
+    `,
+    [payload.tenantId, payload.categoryName, payload.parentCategoryId ?? null]
+  );
+  return rows[0];
+}
+
+export async function listCategories(tenantId: string) {
+  return query(
+    `
+      SELECT *
+      FROM material_categories
+      WHERE tenant_id = $1
+      ORDER BY category_name ASC
+    `,
+    [tenantId]
+  );
+}
+
+export async function getTagNamesByIds(payload: { tenantId: string; tagIds: string[] }) {
+  if (!payload.tagIds.length) return [];
+  return query<{ tag_name: string }>(
+    `
+      SELECT tag_name
+      FROM material_tags
+      WHERE tenant_id = $1 AND id = ANY($2::uuid[])
+    `,
+    [payload.tenantId, payload.tagIds]
+  );
+}
+
+export async function saveMaterialVersion(payload: {
+  tenantId: string;
+  materialId: string;
+  fileType: string;
+  fileUrl: string;
+  fileSize: number;
+}) {
+  return withTransaction(async (client) => {
+    const [current] = await client.query<{ file_type: string; file_url: string; file_size: string }>(
+      `SELECT file_type, file_url, file_size FROM study_materials WHERE tenant_id = $1 AND id = $2`,
+      [payload.tenantId, payload.materialId]
+    );
+    if (!current) throw new HttpError(404, 'Material not found');
+
+    const [latest] = await client.query<{ version_number: number }>(
+      `SELECT COALESCE(MAX(version_number), 0)::int AS version_number FROM material_versions WHERE material_id = $1`,
+      [payload.materialId]
+    );
+    const nextVersion = (latest?.version_number ?? 0) + 1;
+
+    await client.query(
+      `
+        INSERT INTO material_versions (
+          tenant_id, material_id, version_number, file_type, file_url, file_size
+        )
+        VALUES ($1,$2,$3,$4,$5,$6)
+      `,
+      [payload.tenantId, payload.materialId, nextVersion, current.file_type, current.file_url, current.file_size]
+    );
+
+    await client.query(
+      `
+        UPDATE study_materials
+        SET file_type = $1, file_url = $2, file_size = $3, updated_at = NOW()
+        WHERE tenant_id = $4 AND id = $5
+      `,
+      [payload.fileType, payload.fileUrl, payload.fileSize, payload.tenantId, payload.materialId]
+    );
+
+    return nextVersion;
+  });
+}
+
+export async function listMaterialVersions(payload: { tenantId: string; materialId: string }) {
+  return query(
+    `
+      SELECT *
+      FROM material_versions
+      WHERE tenant_id = $1 AND material_id = $2
+      ORDER BY version_number DESC
+    `,
+    [payload.tenantId, payload.materialId]
+  );
+}
+
+export async function toggleBookmark(payload: { tenantId: string; materialId: string; studentId: string }) {
+  await query(
+    `
+      INSERT INTO material_bookmarks (tenant_id, material_id, student_id)
+      VALUES ($1,$2,$3)
+      ON CONFLICT (material_id, student_id) DO NOTHING
+    `,
+    [payload.tenantId, payload.materialId, payload.studentId]
+  );
+}
+
+export async function removeBookmark(payload: { tenantId: string; materialId: string; studentId: string }) {
+  await query(
+    `
+      DELETE FROM material_bookmarks
+      WHERE tenant_id = $1 AND material_id = $2 AND student_id = $3
+    `,
+    [payload.tenantId, payload.materialId, payload.studentId]
+  );
+}
+
+export async function listBookmarks(payload: { tenantId: string; studentId: string }) {
+  return query(
+    `
+      SELECT m.*
+      FROM material_bookmarks mb
+      JOIN study_materials m ON m.id = mb.material_id
+      WHERE mb.tenant_id = $1 AND mb.student_id = $2 AND m.is_deleted = FALSE
+      ORDER BY mb.created_at DESC
+    `,
+    [payload.tenantId, payload.studentId]
+  );
+}
+
+export async function materialAnalyticsSummary(payload: { tenantId: string; from: string; to: string }) {
+  const mostDownloaded = await query(
+    `
+      SELECT id, title, download_count
+      FROM study_materials
+      WHERE tenant_id = $1 AND is_deleted = FALSE
+      ORDER BY download_count DESC
+      LIMIT 10
+    `,
+    [payload.tenantId]
+  );
+
+  const uploadTrends = await query(
+    `
+      SELECT date_trunc('day', created_at) AS day, COUNT(*)::text AS total
+      FROM study_materials
+      WHERE tenant_id = $1 AND created_at::date BETWEEN $2 AND $3
+      GROUP BY day
+      ORDER BY day
+    `,
+    [payload.tenantId, payload.from, payload.to]
+  );
+
+  const [storage] = await query<{ total: string }>(
+    `
+      SELECT COALESCE(SUM(file_size),0)::text AS total
+      FROM study_materials
+      WHERE tenant_id = $1 AND is_deleted = FALSE
+    `,
+    [payload.tenantId]
+  );
+
+  return {
+    mostDownloaded,
+    uploadTrends,
+    storageBytes: Number(storage?.total ?? 0)
+  };
 }
 
 export async function getMaterialDownloadHistory(payload: { tenantId: string; materialId: string }) {

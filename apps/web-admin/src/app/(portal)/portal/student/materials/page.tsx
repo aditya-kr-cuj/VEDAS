@@ -10,6 +10,7 @@ type Course = { id: string; name: string };
 
 export default function StudentMaterialsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [bookmarks, setBookmarks] = useState<Material[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [activeCourse, setActiveCourse] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -25,6 +26,8 @@ export default function StudentMaterialsPage() {
       if (search) params.search = search;
       const res = await api.get("/materials", { params });
       setMaterials(res.data.materials ?? []);
+      const bookmarkRes = await api.get("/materials/bookmarks");
+      setBookmarks(bookmarkRes.data.materials ?? []);
     };
     load().catch(() => setMaterials([]));
   }, [activeCourse, search]);
@@ -98,6 +101,24 @@ export default function StudentMaterialsPage() {
               onDownload={() => download(item.id)}
             />
           ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-white">Bookmarks</h3>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {bookmarks.length === 0 ? (
+            <p className="text-sm text-slate-400">No bookmarks yet.</p>
+          ) : (
+            bookmarks.slice(0, 6).map((item) => (
+              <MaterialCard
+                key={item.id}
+                material={item}
+                detailBase="/portal/student/materials"
+                onDownload={() => download(item.id)}
+              />
+            ))
+          )}
         </div>
       </div>
 

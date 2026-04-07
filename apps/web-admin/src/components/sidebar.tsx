@@ -13,6 +13,7 @@ const items = [
   { label: "Batches", href: "/batches" },
   { label: "Materials", href: "/materials" },
   { label: "Upload Material", href: "/materials/upload" },
+  { label: "Material Analytics", href: "/materials/analytics" },
   { label: "Timetable", href: "/timetable" },
   { label: "Attendance", href: "/attendance/mark" },
   { label: "Fee Payments", href: "/fees/payments" },

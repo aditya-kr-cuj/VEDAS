@@ -20,12 +20,15 @@ export default function MaterialDetailPage() {
   const id = params?.id as string;
   const [material, setMaterial] = useState<MaterialDetail | null>(null);
   const [related, setRelated] = useState<Material[]>([]);
+  const [versions, setVersions] = useState<Array<{ id: string; version_number: number; created_at: string }>>([]);
 
   useEffect(() => {
     if (!id) return;
     const load = async () => {
       const res = await api.get(`/materials/${id}`);
       setMaterial(res.data.material);
+      const versionRes = await api.get(`/materials/${id}/versions`);
+      setVersions(versionRes.data.versions ?? []);
       if (res.data.material?.course_id) {
         const relatedRes = await api.get("/materials", {
           params: { course_id: res.data.material.course_id, limit: 4, page: 1 }
@@ -40,6 +43,19 @@ export default function MaterialDetailPage() {
     if (!material) return;
     const res = await api.post(`/materials/${material.id}/download`);
     window.open(res.data.url, "_blank");
+  };
+
+  const updateFile = async (file: File) => {
+    if (!material) return;
+    const form = new FormData();
+    form.append("file", file);
+    await api.put(`/materials/${material.id}/file`, form, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    const res = await api.get(`/materials/${material.id}`);
+    setMaterial(res.data.material);
+    const versionRes = await api.get(`/materials/${material.id}/versions`);
+    setVersions(versionRes.data.versions ?? []);
   };
 
   if (!material) {
@@ -67,7 +83,7 @@ export default function MaterialDetailPage() {
     }
     if (material.file_type === "video") {
       return (
-        <video controls className="w-full rounded-xl">
+        <video controls playsInline className="w-full rounded-xl">
           <source src={material.download_url} />
         </video>
       );
@@ -105,6 +121,31 @@ export default function MaterialDetailPage() {
           <div>Downloads: {material.download_count}</div>
           <div>Topic: {material.topic ?? "—"}</div>
           <div>Tags: {tagList.join(", ") || "—"}</div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Version History</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-slate-300">
+          <input
+            type="file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) updateFile(file);
+            }}
+          />
+          {versions.length === 0 ? (
+            <p className="text-slate-400">No previous versions.</p>
+          ) : (
+            versions.map((version) => (
+              <div key={version.id} className="flex items-center justify-between">
+                <span>Version {version.version_number}</span>
+                <span>{new Date(version.created_at).toLocaleString()}</span>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
