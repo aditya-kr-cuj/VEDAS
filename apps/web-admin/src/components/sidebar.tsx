@@ -19,6 +19,8 @@ const items = [
   { label: "Tests", href: "/tests" },
   { label: "Reports", href: "/reports" },
   { label: "Announcements", href: "/announcements" },
+  { label: "Notification Settings", href: "/settings/notifications" },
+  { label: "Email Logs", href: "/settings/email-logs" },
   { label: "Timetable", href: "/timetable" },
   { label: "Attendance", href: "/attendance/mark" },
   { label: "Fee Payments", href: "/fees/payments" },

@@ -16,10 +16,12 @@
     "test:jest": "jest",
     "attendance:alerts": "tsx ./src/scripts/attendance-alerts.ts",
     "fees:reminders": "tsx ./src/scripts/fee-reminders.ts",
-    "performance:summary": "tsx ./src/scripts/performance-summary.ts"
+    "performance:summary": "tsx ./src/scripts/performance-summary.ts",
+    "email:worker": "tsx ./src/scripts/email-worker.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "bull": "^4.12.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

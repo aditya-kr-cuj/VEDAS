@@ -208,6 +208,11 @@ export default function StudentPortalPage() {
               Open Notice Board
             </a>
           </div>
+          <div className="mt-2">
+            <a href="/portal/settings/notifications" className="underline text-xs text-blue-300">
+              Notification Settings
+            </a>
+          </div>
         </CardContent>
       </Card>
 

@@ -220,6 +220,11 @@ export default function TeacherPortalPage() {
               ))}
             </ul>
           )}
+          <div className="mt-3">
+            <a href="/portal/settings/notifications" className="underline text-xs text-blue-300">
+              Notification Settings
+            </a>
+          </div>
         </CardContent>
       </Card>
 

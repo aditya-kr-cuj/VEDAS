@@ -143,3 +143,70 @@ export function buildFeeReminderEmail(payload: {
     html: layout('Fee reminder', content)
   };
 }
+
+export function buildTestScheduledEmail(payload: { fullName: string; testTitle: string; date: string }) {
+  const content = `
+    <p style="margin:0 0 12px;">Hi ${payload.fullName},</p>
+    <p style="margin:0 0 16px;">
+      Your test <strong>${payload.testTitle}</strong> is scheduled on ${payload.date}.
+    </p>
+  `;
+  return { subject: 'Upcoming test scheduled', html: layout('Test scheduled', content) };
+}
+
+export function buildTestResultEmail(payload: { fullName: string; testTitle: string; score: string }) {
+  const content = `
+    <p style="margin:0 0 12px;">Hi ${payload.fullName},</p>
+    <p style="margin:0 0 16px;">
+      Your result for <strong>${payload.testTitle}</strong> is now available. Score: ${payload.score}.
+    </p>
+  `;
+  return { subject: 'Test result published', html: layout('Test result', content) };
+}
+
+export function buildAnnouncementEmail(payload: { title: string; message: string }) {
+  const content = `
+    <h3 style="margin:0 0 12px;">${payload.title}</h3>
+    <div>${payload.message}</div>
+  `;
+  return { subject: `Announcement: ${payload.title}`, html: layout('Announcement', content) };
+}
+
+export function buildMaterialUploadEmail(payload: { title: string; courseName: string }) {
+  const content = `
+    <p style="margin:0 0 12px;">New study material uploaded:</p>
+    <p style="margin:0 0 16px;"><strong>${payload.title}</strong> for ${payload.courseName}</p>
+  `;
+  return { subject: 'New study material available', html: layout('New material', content) };
+}
+
+export function buildEmailTemplate(templateName: string, data: any) {
+  switch (templateName) {
+    case 'welcome':
+      return buildWelcomeEmail({ fullName: data.fullName, instituteName: data.instituteName });
+    case 'test_scheduled':
+      return buildTestScheduledEmail({ fullName: data.fullName, testTitle: data.testTitle, date: data.date });
+    case 'test_result':
+      return buildTestResultEmail({ fullName: data.fullName, testTitle: data.testTitle, score: data.score });
+    case 'fee_reminder':
+      return buildFeeReminderEmail({
+        fullName: data.fullName,
+        instituteName: data.instituteName,
+        dueAmount: data.dueAmount,
+        dueDate: data.dueDate,
+        statusLabel: data.statusLabel
+      });
+    case 'low_attendance':
+      return buildLowAttendanceEmail({
+        fullName: data.fullName,
+        percentage: data.percentage,
+        instituteName: data.instituteName
+      });
+    case 'announcement':
+      return buildAnnouncementEmail({ title: data.title, message: data.message });
+    case 'material_upload':
+      return buildMaterialUploadEmail({ title: data.title, courseName: data.courseName });
+    default:
+      return { subject: 'Notification', html: layout('Notification', `<p>${data?.message ?? ''}</p>`) };
+  }
+}
