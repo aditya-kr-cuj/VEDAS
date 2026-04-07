@@ -25,6 +25,7 @@ import { materialRouter } from './modules/materials/material.routes.js';
 import { superAdminRouter } from './modules/super-admin/super-admin.routes.js';
 import { tenantRouter } from './modules/tenants/tenant.routes.js';
 import { userRouter } from './modules/users/user.routes.js';
+import { questionRouter } from './modules/exams/question.routes.js';
 
 export function buildApp() {
   const app = express();
@@ -78,6 +79,7 @@ export function buildApp() {
   app.use('/api/v1/dashboard', dashboardRouter);
   app.use('/api/v1/tenant', tenantRouter);
   app.use('/api/v1/users', userRouter);
+  app.use('/api/v1/questions', questionRouter);
   app.use('/api/v1/super-admin', superAdminRouter);
 
   app.use(notFoundHandler);
