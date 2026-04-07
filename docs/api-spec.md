@@ -198,6 +198,68 @@ Base URL: `/api/v1`
   - Purpose: Assign student to batch
   - Auth: Yes (`institute_admin`)
 
+## Fees
+
+- `POST /fees/structures`
+  - Purpose: Create fee structure
+  - Auth: Yes (`institute_admin`)
+
+- `GET /fees/structures`
+  - Purpose: List fee structures
+  - Auth: Yes (`institute_admin`)
+
+- `POST /fees/assign`
+  - Purpose: Assign fee structure to students
+  - Auth: Yes (`institute_admin`)
+
+- `POST /fees/payments`
+  - Purpose: Record fee payment
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/student/:studentId/history`
+  - Purpose: Payment history for a student
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/payments/:paymentId/receipt`
+  - Purpose: Download payment receipt PDF
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/due`
+  - Purpose: List due fees
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/overdue`
+  - Purpose: List overdue fees
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/reports/summary`
+  - Purpose: Fee summary report
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/reports/daily`
+  - Purpose: Daily fee collection report
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/reports/monthly`
+  - Purpose: Monthly fee collection report
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/reports/student/:studentId`
+  - Purpose: Student fee statement
+  - Auth: Yes (`institute_admin`, `staff`)
+
+- `GET /fees/my`
+  - Purpose: List current student's fee records
+  - Auth: Yes (`student`)
+
+- `POST /fees/create-payment-link`
+  - Purpose: Create Razorpay payment link
+  - Auth: Yes (`institute_admin`, `staff`, `student`)
+
+- `POST /fees/webhook/razorpay`
+  - Purpose: Razorpay webhook receiver
+  - Auth: No
+
 - `GET /batches/:id/students`
   - Purpose: List students in a batch
   - Auth: Yes (`institute_admin`)

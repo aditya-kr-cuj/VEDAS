@@ -11,6 +11,10 @@ const items = [
   { label: "Staff", href: "/staff" },
   { label: "Courses", href: "/courses" },
   { label: "Batches", href: "/batches" },
+  { label: "Timetable", href: "/timetable" },
+  { label: "Attendance", href: "/attendance/mark" },
+  { label: "Fee Payments", href: "/fees/payments" },
+  { label: "Fee Reports", href: "/fees/reports" },
   { label: "Profile", href: "/profile" },
 ];
 

@@ -11,6 +11,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AvailabilityGrid } from "@/components/availability-grid";
 
 type TeacherUser = {
   id: string;
@@ -29,6 +30,23 @@ type Batch = {
 type Course = {
   id: string;
   name: string;
+};
+
+type TimeSlot = {
+  id: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  slot_number: number;
+};
+
+type Availability = {
+  id: string;
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+  is_available: boolean;
+  reason: string | null;
 };
 
 const createSchema = z.object({
@@ -62,6 +80,10 @@ export default function TeachersPage() {
   const [assignTeacherId, setAssignTeacherId] = useState<string | null>(null);
   const [assignBatchId, setAssignBatchId] = useState<string>("");
   const [assignCourseId, setAssignCourseId] = useState<string>("");
+  const [availabilityOpen, setAvailabilityOpen] = useState(false);
+  const [availabilityTeacherId, setAvailabilityTeacherId] = useState<string | null>(null);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [availability, setAvailability] = useState<Availability[]>([]);
 
   const createForm = useForm<CreateValues>({ resolver: zodResolver(createSchema) });
   const editForm = useForm<EditValues>({ resolver: zodResolver(editSchema) });
@@ -101,10 +123,20 @@ export default function TeachersPage() {
     }
   };
 
+  const loadTimeSlots = async () => {
+    try {
+      const response = await api.get("/time-slots");
+      setTimeSlots(response.data.slots ?? []);
+    } catch {
+      setTimeSlots([]);
+    }
+  };
+
   useEffect(() => {
     loadTeachers();
     loadBatches();
     loadCourses();
+    loadTimeSlots();
   }, []);
 
   const filtered = useMemo(() => {
@@ -188,6 +220,37 @@ export default function TeachersPage() {
     }
   };
 
+  const openAvailability = async (teacherId: string) => {
+    setAvailabilityTeacherId(teacherId);
+    setAvailabilityOpen(true);
+    try {
+      const response = await api.get(`/teachers/${teacherId}/availability`);
+      setAvailability(response.data.availability ?? []);
+    } catch {
+      setAvailability([]);
+    }
+  };
+
+  const markUnavailable = async (slot: TimeSlot, reason: string) => {
+    if (!availabilityTeacherId) return;
+    await api.post(`/teachers/${availabilityTeacherId}/availability`, {
+      dayOfWeek: slot.day_of_week,
+      startTime: slot.start_time,
+      endTime: slot.end_time,
+      isAvailable: false,
+      reason: reason || undefined,
+    });
+    const res = await api.get(`/teachers/${availabilityTeacherId}/availability`);
+    setAvailability(res.data.availability ?? []);
+  };
+
+  const markAvailable = async (availabilityId: string) => {
+    if (!availabilityTeacherId) return;
+    await api.delete(`/teachers/${availabilityTeacherId}/availability/${availabilityId}`);
+    const res = await api.get(`/teachers/${availabilityTeacherId}/availability`);
+    setAvailability(res.data.availability ?? []);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -265,6 +328,9 @@ export default function TeachersPage() {
                       }}
                     >
                       Assign Batch
+                    </Button>
+                    <Button variant="outline" onClick={() => openAvailability(teacher.id)}>
+                      Availability
                     </Button>
                     <Button variant="destructive" onClick={() => onDelete(teacher.id)}>
                       Delete
@@ -410,6 +476,21 @@ export default function TeachersPage() {
               Assign
             </Button>
           </div>
+        </div>
+      </Dialog>
+
+      <Dialog open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
+        <DialogHeader>
+          <DialogTitle>Teacher Availability</DialogTitle>
+          <DialogDescription>Manage weekly availability slots.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <AvailabilityGrid
+            timeSlots={timeSlots}
+            availability={availability}
+            onMarkUnavailable={markUnavailable}
+            onMarkAvailable={markAvailable}
+          />
         </div>
       </Dialog>
     </div>

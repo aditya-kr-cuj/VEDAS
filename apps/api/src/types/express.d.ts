@@ -6,6 +6,7 @@ declare global {
       auth?: JwtPayload;
       tenantId?: string | null;
       role?: UserRole;
+      bodyRaw?: string;
     }
   }
 }

@@ -22,6 +22,9 @@ Run the backend + admin frontend in a cloud testing environment for demo purpose
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
 - `APP_BASE_URL`
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
 
 ## Post-Deploy Sanity Check
 
@@ -75,7 +78,28 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api/v1
    - `CORS_ORIGIN` (Vercel domain)
    - `RESEND_API_KEY`
    - `EMAIL_FROM`
-   - `APP_BASE_URL` (Vercel domain)
+  - `APP_BASE_URL` (Vercel domain)
+  - `ATTENDANCE_THRESHOLD` (e.g., 75)
+  - `RAZORPAY_KEY_ID`
+  - `RAZORPAY_KEY_SECRET`
+  - `RAZORPAY_WEBHOOK_SECRET`
+
+### 2.1) Weekly Attendance Alerts (Render Cron)
+1. Create a Render Cron Job.
+2. Command:
+   - `npm run attendance:alerts --workspace @vedas/api`
+3. Schedule: weekly (e.g., every Monday 08:00).
+
+### 2.2) Fee Reminder Cron (Render Cron)
+1. Create another Render Cron Job.
+2. Command:
+   - `npm run fees:reminders --workspace @vedas/api`
+3. Schedule: daily (e.g., 09:00).
+
+### 2.3) Razorpay Webhook
+1. In Razorpay Dashboard, add a webhook URL:
+   - `https://<your-render-app>.onrender.com/api/v1/fees/webhook/razorpay`
+2. Use the same secret value as `RAZORPAY_WEBHOOK_SECRET`.
 
 ### 3) Frontend: Vercel (Next.js)
 1. Import the repo into Vercel.

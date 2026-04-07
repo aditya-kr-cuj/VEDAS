@@ -95,3 +95,51 @@ export function buildWelcomeEmail(payload: { fullName: string; instituteName: st
     html: layout('Welcome to VEDAS', content)
   };
 }
+
+export function buildLowAttendanceEmail(payload: {
+  fullName: string;
+  percentage: number;
+  instituteName: string;
+}) {
+  const content = `
+    <p style="margin:0 0 12px;">Hi ${payload.fullName},</p>
+    <p style="margin:0 0 16px;">
+      Your attendance has fallen to <strong>${payload.percentage}%</strong> this week at ${payload.instituteName}.
+    </p>
+    <p style="margin:0 0 16px;">
+      Please reach out to your institute admin if you need support.
+    </p>
+  `;
+
+  return {
+    subject: 'Attendance alert',
+    html: layout('Attendance alert', content)
+  };
+}
+
+export function buildFeeReminderEmail(payload: {
+  fullName: string;
+  instituteName: string;
+  dueAmount: number;
+  dueDate: string;
+  statusLabel: string;
+}) {
+  const content = `
+    <p style="margin:0 0 12px;">Hi ${payload.fullName},</p>
+    <p style="margin:0 0 16px;">
+      This is a ${payload.statusLabel} reminder for your pending fee at ${payload.instituteName}.
+    </p>
+    <p style="margin:0 0 16px;">
+      Due Amount: <strong>${payload.dueAmount}</strong><br/>
+      Due Date: <strong>${payload.dueDate}</strong>
+    </p>
+    <p style="margin:0 0 16px;">
+      Please complete the payment at the earliest to avoid late fees.
+    </p>
+  `;
+
+  return {
+    subject: 'Fee payment reminder',
+    html: layout('Fee reminder', content)
+  };
+}

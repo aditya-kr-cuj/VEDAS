@@ -14,7 +14,10 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   RESEND_API_KEY: z.string().optional().default(''),
   EMAIL_FROM: z.string().default('VEDAS <no-reply@vedas.app>'),
-  APP_BASE_URL: z.string().default('http://localhost:3000')
+  APP_BASE_URL: z.string().default('http://localhost:3000'),
+  RAZORPAY_KEY_ID: z.string().optional().default(''),
+  RAZORPAY_KEY_SECRET: z.string().optional().default(''),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default('')
 });
 
 const parsed = envSchema.safeParse(process.env);

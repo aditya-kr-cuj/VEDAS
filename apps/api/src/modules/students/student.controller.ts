@@ -5,6 +5,7 @@ import { parseCsvToRows } from '../../utils/csv.js';
 import { createTenantUser } from '../auth/auth.service.js';
 import { z } from 'zod';
 import xlsx from 'xlsx';
+import { findStudentProfileByUserId } from './student.repository.js';
 
 export async function getStudentHandler(req: Request, res: Response): Promise<void> {
   const tenantId = req.tenantId;
@@ -48,6 +49,31 @@ export async function deleteStudentHandler(req: Request, res: Response): Promise
 
   await softDeleteStudent({ tenantId, studentId: req.params.id });
   res.status(200).json({ message: 'Student deactivated' });
+}
+
+export async function getMyStudentProfileHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  const userId = req.auth?.userId;
+  if (!tenantId || !userId) {
+    throw new HttpError(400, 'Tenant context is required');
+  }
+
+  const student = await findStudentProfileByUserId(tenantId, userId);
+  if (!student) {
+    throw new HttpError(404, 'Student profile not found');
+  }
+
+  res.status(200).json({
+    student: {
+      id: student.id,
+      tenantId: student.tenant_id,
+      userId: student.user_id,
+      rollNumber: student.roll_number,
+      className: student.class_name,
+      guardianName: student.guardian_name,
+      guardianPhone: student.guardian_phone
+    }
+  });
 }
 
 const bulkRowSchema = z.object({

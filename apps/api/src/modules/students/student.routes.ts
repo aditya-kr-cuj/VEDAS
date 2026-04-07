@@ -5,6 +5,7 @@ import { validateBody, validateParams } from '../../middleware/validate.js';
 import {
   csvTemplateHandler,
   deleteStudentHandler,
+  getMyStudentProfileHandler,
   getStudentHandler,
   updateStudentHandler,
   bulkUploadStudentsHandler
@@ -26,6 +27,13 @@ const upload = multer({
 });
 
 export const studentRouter = Router();
+
+studentRouter.get(
+  '/me',
+  authenticate,
+  requireTenant,
+  asyncHandler(getMyStudentProfileHandler)
+);
 
 studentRouter.get(
   '/:id',
