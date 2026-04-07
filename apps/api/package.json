@@ -15,7 +15,8 @@
     "test": "node --loader tsx --test src/__tests__/*.test.ts",
     "test:jest": "jest",
     "attendance:alerts": "tsx ./src/scripts/attendance-alerts.ts",
-    "fees:reminders": "tsx ./src/scripts/fee-reminders.ts"
+    "fees:reminders": "tsx ./src/scripts/fee-reminders.ts",
+    "performance:summary": "tsx ./src/scripts/performance-summary.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
