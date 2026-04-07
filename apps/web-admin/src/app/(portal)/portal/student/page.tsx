@@ -199,6 +199,20 @@ export default function StudentPortalPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Announcements</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-slate-400">Check the latest institute notices.</p>
+          <div className="mt-3">
+            <a href="/portal/student/announcements" className="underline text-sm text-white">
+              Open Notice Board
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Subject-wise Attendance</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-slate-300">

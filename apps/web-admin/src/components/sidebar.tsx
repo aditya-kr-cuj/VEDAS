@@ -18,6 +18,7 @@ const items = [
   { label: "Questions", href: "/questions" },
   { label: "Tests", href: "/tests" },
   { label: "Reports", href: "/reports" },
+  { label: "Announcements", href: "/announcements" },
   { label: "Timetable", href: "/timetable" },
   { label: "Attendance", href: "/attendance/mark" },
   { label: "Fee Payments", href: "/fees/payments" },
