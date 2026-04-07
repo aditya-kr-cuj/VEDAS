@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../../utils/http-error.js';
-import { findStudentById, softDeleteStudent, updateStudentProfile } from './student.repository.js';
+import { findStudentById, softDeleteStudent, updateStudentProfile, listStudentSummaries } from './student.repository.js';
 import { parseCsvToRows } from '../../utils/csv.js';
 import { createTenantUser } from '../auth/auth.service.js';
 import { z } from 'zod';
@@ -74,6 +74,15 @@ export async function getMyStudentProfileHandler(req: Request, res: Response): P
       guardianPhone: student.guardian_phone
     }
   });
+}
+
+export async function listStudentsHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) {
+    throw new HttpError(400, 'Tenant context is required');
+  }
+  const rows = await listStudentSummaries(tenantId);
+  res.status(200).json({ students: rows });
 }
 
 const bulkRowSchema = z.object({

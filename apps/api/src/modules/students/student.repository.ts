@@ -62,6 +62,19 @@ export interface StudentProfile {
   updatedAt: Date;
 }
 
+export async function listStudentSummaries(tenantId: string) {
+  return query(
+    `
+      SELECT s.id, u.full_name, u.email
+      FROM students s
+      JOIN users u ON u.id = s.user_id
+      WHERE s.tenant_id = $1 AND u.is_active = TRUE
+      ORDER BY u.full_name ASC
+    `,
+    [tenantId]
+  );
+}
+
 export async function findStudentById(tenantId: string, studentId: string): Promise<StudentProfile | null> {
   const rows = await query<{
     id: string;

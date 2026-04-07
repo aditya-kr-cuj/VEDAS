@@ -7,6 +7,7 @@ import {
   deleteStudentHandler,
   getMyStudentProfileHandler,
   getStudentHandler,
+  listStudentsHandler,
   updateStudentHandler,
   bulkUploadStudentsHandler
 } from './student.controller.js';
@@ -27,6 +28,14 @@ const upload = multer({
 });
 
 export const studentRouter = Router();
+
+studentRouter.get(
+  '/',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  asyncHandler(listStudentsHandler)
+);
 
 studentRouter.get(
   '/me',
