@@ -15,6 +15,7 @@ const items = [
   { label: "Upload Material", href: "/materials/upload" },
   { label: "Material Analytics", href: "/materials/analytics" },
   { label: "Questions", href: "/questions" },
+  { label: "Tests", href: "/tests" },
   { label: "Timetable", href: "/timetable" },
   { label: "Attendance", href: "/attendance/mark" },
   { label: "Fee Payments", href: "/fees/payments" },
