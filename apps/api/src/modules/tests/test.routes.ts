@@ -10,6 +10,11 @@ import {
   publishTestHandler,
   updateTestHandler
 } from './test.controller.js';
+import {
+  evaluateSubmissionHandler,
+  getSubmissionHandler,
+  listSubmissionsHandler
+} from './grading.controller.js';
 import { createTestSchema, testIdParamSchema, updateTestSchema } from './test.schema.js';
 
 export const testRouter = Router();
@@ -66,4 +71,29 @@ testRouter.post(
   authorize(['institute_admin', 'teacher']),
   validateParams(testIdParamSchema),
   asyncHandler(publishTestHandler)
+);
+
+testRouter.get(
+  '/:id/submissions',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  validateParams(testIdParamSchema),
+  asyncHandler(listSubmissionsHandler)
+);
+
+testRouter.get(
+  '/:testId/evaluate/:attemptId',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  asyncHandler(getSubmissionHandler)
+);
+
+testRouter.post(
+  '/:testId/evaluate/:attemptId',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  asyncHandler(evaluateSubmissionHandler)
 );

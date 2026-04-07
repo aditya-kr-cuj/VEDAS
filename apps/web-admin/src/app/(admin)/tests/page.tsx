@@ -78,13 +78,16 @@ export default function TestsPage() {
                 {test.start_time ? new Date(test.start_time).toLocaleString() : "No start time"} •{" "}
                 {test.duration_minutes} mins
               </p>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <Link href={`/tests/new?id=${test.id}`} className="text-blue-300">
-                  Edit
-                </Link>
-                <button className="text-emerald-300" onClick={() => publish(test.id)}>
-                  Publish
-                </button>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Link href={`/tests/new?id=${test.id}`} className="text-blue-300">
+                    Edit
+                  </Link>
+                  <Link href={`/tests/${test.id}/evaluate`} className="text-amber-300">
+                    Evaluate
+                  </Link>
+                  <button className="text-emerald-300" onClick={() => publish(test.id)}>
+                    Publish
+                  </button>
                 <button className="text-red-300" onClick={() => remove(test.id)}>
                   Delete
                 </button>

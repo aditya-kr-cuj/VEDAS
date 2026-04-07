@@ -158,6 +158,11 @@ export async function getResult(payload: { attemptId: string }) {
 
 export async function gradeAttempt(payload: { attemptId: string; testId: string }) {
   return withTransaction(async (client) => {
+    const [test] = await client.query(
+      `SELECT negative_marking FROM tests WHERE id = $1`,
+      [payload.testId]
+    );
+    const negativeMark = Number(test?.negative_marking ?? 0);
     const answers = await client.query(
       `SELECT * FROM test_answers WHERE attempt_id = $1`,
       [payload.attemptId]
@@ -194,22 +199,28 @@ export async function gradeAttempt(payload: { attemptId: string; testId: string 
         const correct = options.rows.find((o: any) => o.question_id === question.id && o.is_correct);
         const selected = answer.answer_data?.selected_option_id;
         isCorrect = correct && selected === correct.id;
-        marks = isCorrect ? maxMarks : 0;
+        marks = isCorrect ? maxMarks : negativeMark ? -Math.abs(negativeMark) : 0;
       } else if (question.question_type === 'multi_select') {
         const correctIds = options.rows.filter((o: any) => o.question_id === question.id && o.is_correct).map((o: any) => o.id).sort();
         const selected = (answer.answer_data?.selected_option_ids ?? []).sort();
         isCorrect = JSON.stringify(correctIds) === JSON.stringify(selected);
-        marks = isCorrect ? maxMarks : 0;
+        marks = isCorrect ? maxMarks : negativeMark ? -Math.abs(negativeMark) : 0;
       } else if (question.question_type === 'fill_blanks') {
         const answersForQuestion = blanks.rows.filter((b: any) => b.question_id === question.id);
         const provided = answer.answer_data?.answers ?? [];
         const allCorrect = answersForQuestion.every((b: any, idx: number) => {
-          const expected = b.correct_answer;
-          const got = provided[idx] ?? '';
-          return b.case_sensitive ? expected === got : expected.toLowerCase() === String(got).toLowerCase();
+          const expectedList = Array.isArray(b.acceptable_answers)
+            ? b.acceptable_answers
+            : b.acceptable_answers
+              ? JSON.parse(b.acceptable_answers)
+              : [b.correct_answer];
+          const got = String(provided[idx] ?? '');
+          return expectedList.some((expected: string) =>
+            b.case_sensitive ? expected === got : expected.toLowerCase() === got.toLowerCase()
+          );
         });
         isCorrect = allCorrect;
-        marks = isCorrect ? maxMarks : 0;
+        marks = isCorrect ? maxMarks : negativeMark ? -Math.abs(negativeMark) : 0;
       } else {
         isCorrect = null;
         marks = 0;
