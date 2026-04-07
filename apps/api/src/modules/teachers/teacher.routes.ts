@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/async-handler.js';
 import { authenticate, authorize, requireTenant } from '../../middleware/auth.js';
 import { validateParams } from '../../middleware/validate.js';
-import { listTeacherBatchesHandler } from './teacher.controller.js';
+import { getMyTeacherProfileHandler, listTeacherBatchesHandler } from './teacher.controller.js';
 import { teacherIdParamSchema } from './teacher.schema.js';
 import { validateBody, validateParams } from '../../middleware/validate.js';
 import {
@@ -14,6 +14,14 @@ import {
 import { availabilityIdParamSchema, createAvailabilitySchema, updateAvailabilitySchema } from './availability.schema.js';
 
 export const teacherRouter = Router();
+
+teacherRouter.get(
+  '/me',
+  authenticate,
+  requireTenant,
+  authorize(['teacher']),
+  asyncHandler(getMyTeacherProfileHandler)
+);
 
 teacherRouter.get(
   '/:id/batches',

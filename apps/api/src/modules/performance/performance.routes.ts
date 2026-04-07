@@ -5,7 +5,9 @@ import { performanceOverviewHandler, subjectPerformanceHandler } from './perform
 import {
   batchComparisonHandler,
   performanceTrendHandler,
-  testComparisonHandler
+  testComparisonHandler,
+  teacherPerformanceHandler,
+  teachersPerformanceHandler
 } from './performance.controller.js';
 
 export const performanceRouter = Router();
@@ -40,6 +42,22 @@ performanceRouter.get(
   requireTenant,
   authorize(['institute_admin', 'teacher']),
   asyncHandler(testComparisonHandler)
+);
+
+performanceRouter.get(
+  '/teacher/:id/performance',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  asyncHandler(teacherPerformanceHandler)
+);
+
+performanceRouter.get(
+  '/admin/teachers/performance',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  asyncHandler(teachersPerformanceHandler)
 );
 
 performanceRouter.get(

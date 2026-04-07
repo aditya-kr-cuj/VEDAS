@@ -7,6 +7,7 @@ import {
   getSubjectPerformance,
   getTestComparison
 } from './performance.repository.js';
+import { getTeacherPerformance, listTeachersPerformance } from './teacher-performance.repository.js';
 import { findStudentProfileByUserId } from '../students/student.repository.js';
 
 export async function performanceOverviewHandler(req: Request, res: Response): Promise<void> {
@@ -75,4 +76,27 @@ export async function testComparisonHandler(req: Request, res: Response): Promis
   const ids = req.query.test_ids?.toString().split(',').filter(Boolean) ?? [];
   const result = await getTestComparison({ tenantId, testIds: ids });
   res.status(200).json({ comparisons: result });
+}
+
+export async function teacherPerformanceHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+
+  if (req.role === 'teacher') {
+    const teacher = await findTeacherProfileByUserId(tenantId, req.auth?.userId ?? '');
+    if (!teacher || teacher.id !== req.params.id) {
+      throw new HttpError(403, 'Access denied');
+    }
+  }
+
+  const performance = await getTeacherPerformance({ tenantId, teacherId: req.params.id });
+  if (!performance) throw new HttpError(404, 'Teacher not found');
+  res.status(200).json(performance);
+}
+
+export async function teachersPerformanceHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const rows = await listTeachersPerformance({ tenantId });
+  res.status(200).json({ teachers: rows });
 }
