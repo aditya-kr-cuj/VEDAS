@@ -10,9 +10,16 @@ import {
   listPreferencesHandler,
   updatePreferencesHandler
 } from './email.controller.js';
+import {
+  enqueueSmsHandler,
+  listSmsLogsHandler,
+  getSmsCreditsHandler,
+  addSmsCreditsHandler
+} from './sms.controller.js';
 
 export const notificationRouter = Router();
 
+// ── General notifications ───────────────────────────────────────
 notificationRouter.post(
   '/send',
   authenticate,
@@ -24,6 +31,7 @@ notificationRouter.post(
 
 notificationRouter.get('/my', authenticate, asyncHandler(listMyNotificationsHandler));
 
+// ── Email ───────────────────────────────────────────────────────
 notificationRouter.post(
   '/email/send',
   authenticate,
@@ -40,5 +48,39 @@ notificationRouter.get(
   asyncHandler(listEmailLogsHandler)
 );
 
+// ── SMS ─────────────────────────────────────────────────────────
+notificationRouter.post(
+  '/sms/send',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  asyncHandler(enqueueSmsHandler)
+);
+
+notificationRouter.get(
+  '/sms/logs',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  asyncHandler(listSmsLogsHandler)
+);
+
+notificationRouter.get(
+  '/sms/credits',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  asyncHandler(getSmsCreditsHandler)
+);
+
+notificationRouter.post(
+  '/sms/credits',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  asyncHandler(addSmsCreditsHandler)
+);
+
+// ── Preferences ─────────────────────────────────────────────────
 notificationRouter.get('/preferences', authenticate, asyncHandler(listPreferencesHandler));
 notificationRouter.put('/preferences', authenticate, asyncHandler(updatePreferencesHandler));

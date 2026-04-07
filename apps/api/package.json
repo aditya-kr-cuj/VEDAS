@@ -17,7 +17,8 @@
     "attendance:alerts": "tsx ./src/scripts/attendance-alerts.ts",
     "fees:reminders": "tsx ./src/scripts/fee-reminders.ts",
     "performance:summary": "tsx ./src/scripts/performance-summary.ts",
-    "email:worker": "tsx ./src/scripts/email-worker.ts"
+    "email:worker": "tsx ./src/scripts/email-worker.ts",
+    "sms:worker": "tsx ./src/scripts/sms-worker.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
