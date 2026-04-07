@@ -17,7 +17,12 @@ const envSchema = z.object({
   APP_BASE_URL: z.string().default('http://localhost:3000'),
   RAZORPAY_KEY_ID: z.string().optional().default(''),
   RAZORPAY_KEY_SECRET: z.string().optional().default(''),
-  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default('')
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(''),
+  S3_REGION: z.string().optional().default(''),
+  S3_BUCKET: z.string().optional().default(''),
+  S3_ACCESS_KEY_ID: z.string().optional().default(''),
+  S3_SECRET_ACCESS_KEY: z.string().optional().default(''),
+  S3_PUBLIC_BASE_URL: z.string().optional().default('')
 });
 
 const parsed = envSchema.safeParse(process.env);

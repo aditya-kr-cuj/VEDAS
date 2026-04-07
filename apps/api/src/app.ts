@@ -21,6 +21,7 @@ import { roomRouter } from './modules/timetable/room.routes.js';
 import { timetableEntryRouter } from './modules/timetable/timetable-entry.routes.js';
 import { attendanceRouter } from './modules/attendance/attendance.routes.js';
 import { feeRouter } from './modules/fees/fee.routes.js';
+import { materialRouter } from './modules/materials/material.routes.js';
 import { superAdminRouter } from './modules/super-admin/super-admin.routes.js';
 import { tenantRouter } from './modules/tenants/tenant.routes.js';
 import { userRouter } from './modules/users/user.routes.js';
@@ -73,6 +74,7 @@ export function buildApp() {
   app.use('/api/v1/timetable', timetableEntryRouter);
   app.use('/api/v1/attendance', attendanceRouter);
   app.use('/api/v1/fees', feeRouter);
+  app.use('/api/v1/materials', materialRouter);
   app.use('/api/v1/dashboard', dashboardRouter);
   app.use('/api/v1/tenant', tenantRouter);
   app.use('/api/v1/users', userRouter);

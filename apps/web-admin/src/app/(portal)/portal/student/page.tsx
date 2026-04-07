@@ -166,6 +166,20 @@ export default function StudentPortalPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Study Materials</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-slate-400">Browse resources shared by your teachers.</p>
+          <div className="mt-3">
+            <a href="/portal/student/materials" className="underline text-sm text-white">
+              Open Materials Library
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Subject-wise Attendance</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-slate-300">
