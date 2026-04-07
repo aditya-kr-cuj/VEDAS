@@ -189,6 +189,11 @@ export default function StudentPortalPage() {
               Open Tests
             </a>
           </div>
+          <div className="mt-2">
+            <a href="/portal/student/performance" className="underline text-xs text-blue-300">
+              Performance Dashboard
+            </a>
+          </div>
         </CardContent>
       </Card>
 

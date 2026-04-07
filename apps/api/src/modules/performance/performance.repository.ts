@@ -82,6 +82,76 @@ export async function getSubjectPerformance(payload: {
   return { tests, topic_breakdown: topicBreakdown };
 }
 
+export async function getPerformanceTrend(payload: { tenantId: string; studentId: string }) {
+  const rows = await query(
+    `
+      SELECT
+        ta.test_id,
+        ta.percentage AS score,
+        ta.created_at AS date
+      FROM test_attempts ta
+      JOIN tests t ON t.id = ta.test_id
+      WHERE ta.student_id = $1 AND t.tenant_id = $2
+      ORDER BY ta.created_at ASC
+    `,
+    [payload.studentId, payload.tenantId]
+  );
+
+  let trend = 'stable';
+  if (rows.length >= 2) {
+    const first = Number(rows[0].score ?? 0);
+    const last = Number(rows[rows.length - 1].score ?? 0);
+    const diff = last - first;
+    if (diff >= 5) trend = 'improving';
+    else if (diff <= -5) trend = 'declining';
+  }
+
+  return { trend_data: rows, trend };
+}
+
+export async function getBatchComparison(payload: { tenantId: string; batchId: string }) {
+  return query(
+    `
+      SELECT
+        s.id AS student_id,
+        u.full_name AS student_name,
+        AVG(ta.percentage)::numeric(6,2) AS average_score,
+        COUNT(ta.id)::int AS tests_taken,
+        ps.attendance_percentage,
+        DENSE_RANK() OVER (ORDER BY AVG(ta.percentage) DESC) AS rank
+      FROM batch_students bs
+      JOIN students s ON s.id = bs.student_id
+      JOIN users u ON u.id = s.user_id
+      LEFT JOIN test_attempts ta ON ta.student_id = s.id
+      LEFT JOIN tests t ON t.id = ta.test_id AND t.batch_id = bs.batch_id AND t.tenant_id = $1
+      LEFT JOIN performance_summary ps ON ps.student_id = s.id AND ps.tenant_id = $1
+      WHERE bs.batch_id = $2
+      GROUP BY s.id, u.full_name, ps.attendance_percentage
+      ORDER BY average_score DESC NULLS LAST
+    `,
+    [payload.tenantId, payload.batchId]
+  );
+}
+
+export async function getTestComparison(payload: { tenantId: string; testIds: string[] }) {
+  return query(
+    `
+      SELECT
+        s.id AS student_id,
+        u.full_name AS student_name,
+        ta.test_id,
+        ta.percentage
+      FROM test_attempts ta
+      JOIN students s ON s.id = ta.student_id
+      JOIN users u ON u.id = s.user_id
+      JOIN tests t ON t.id = ta.test_id
+      WHERE t.tenant_id = $1 AND ta.test_id = ANY($2::uuid[])
+      ORDER BY u.full_name, ta.test_id
+    `,
+    [payload.tenantId, payload.testIds]
+  );
+}
+
 export async function upsertPerformanceSummary(payload: {
   tenantId: string;
   studentId: string;

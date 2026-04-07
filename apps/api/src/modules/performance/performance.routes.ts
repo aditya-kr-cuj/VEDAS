@@ -2,6 +2,11 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/async-handler.js';
 import { authenticate, authorize, requireTenant } from '../../middleware/auth.js';
 import { performanceOverviewHandler, subjectPerformanceHandler } from './performance.controller.js';
+import {
+  batchComparisonHandler,
+  performanceTrendHandler,
+  testComparisonHandler
+} from './performance.controller.js';
 
 export const performanceRouter = Router();
 
@@ -11,6 +16,30 @@ performanceRouter.get(
   requireTenant,
   authorize(['institute_admin', 'teacher', 'student']),
   asyncHandler(performanceOverviewHandler)
+);
+
+performanceRouter.get(
+  '/student/:id/performance/trend',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher', 'student']),
+  asyncHandler(performanceTrendHandler)
+);
+
+performanceRouter.get(
+  '/batch/:id/performance/comparison',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  asyncHandler(batchComparisonHandler)
+);
+
+performanceRouter.get(
+  '/performance/test-comparison',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  asyncHandler(testComparisonHandler)
 );
 
 performanceRouter.get(
