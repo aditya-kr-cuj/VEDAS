@@ -16,6 +16,13 @@ import {
   getSmsCreditsHandler,
   addSmsCreditsHandler
 } from './sms.controller.js';
+import {
+  enqueueWhatsAppHandler,
+  listWhatsAppLogsHandler,
+  listTemplatesHandler,
+  createTemplateHandler,
+  listOptinsHandler
+} from './whatsapp.controller.js';
 
 export const notificationRouter = Router();
 
@@ -79,6 +86,47 @@ notificationRouter.post(
   requireTenant,
   authorize(['institute_admin']),
   asyncHandler(addSmsCreditsHandler)
+);
+
+// ── WhatsApp ────────────────────────────────────────────────────
+notificationRouter.post(
+  '/whatsapp/send',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  asyncHandler(enqueueWhatsAppHandler)
+);
+
+notificationRouter.get(
+  '/whatsapp/logs',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  asyncHandler(listWhatsAppLogsHandler)
+);
+
+notificationRouter.get(
+  '/whatsapp/templates',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  asyncHandler(listTemplatesHandler)
+);
+
+notificationRouter.post(
+  '/whatsapp/templates',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  asyncHandler(createTemplateHandler)
+);
+
+notificationRouter.get(
+  '/whatsapp/optins',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin']),
+  asyncHandler(listOptinsHandler)
 );
 
 // ── Preferences ─────────────────────────────────────────────────

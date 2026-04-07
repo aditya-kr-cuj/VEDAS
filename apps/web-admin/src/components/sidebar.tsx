@@ -23,6 +23,8 @@ const items = [
   { label: "Email Logs", href: "/settings/email-logs" },
   { label: "SMS Logs", href: "/settings/sms-logs" },
   { label: "SMS Credits", href: "/settings/sms-credits" },
+  { label: "WhatsApp Settings", href: "/settings/whatsapp" },
+  { label: "WhatsApp Logs", href: "/settings/whatsapp-logs" },
   { label: "Timetable", href: "/timetable" },
   { label: "Attendance", href: "/attendance/mark" },
   { label: "Fee Payments", href: "/fees/payments" },

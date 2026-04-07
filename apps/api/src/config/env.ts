@@ -26,7 +26,10 @@ const envSchema = z.object({
   REDIS_URL: z.string().optional().default(''),
   MSG91_AUTH_KEY: z.string().optional().default(''),
   MSG91_SENDER_ID: z.string().optional().default('VEDAS'),
-  MSG91_DLT_TE_ID: z.string().optional().default('')
+  MSG91_DLT_TE_ID: z.string().optional().default(''),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().optional().default(''),
+  WHATSAPP_ACCESS_TOKEN: z.string().optional().default(''),
+  WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().optional().default('')
 });
 
 const parsed = envSchema.safeParse(process.env);
