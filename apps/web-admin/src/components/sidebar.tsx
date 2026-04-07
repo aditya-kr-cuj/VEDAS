@@ -19,6 +19,7 @@ const items = [
   { label: "Tests", href: "/tests" },
   { label: "Reports", href: "/reports" },
   { label: "Announcements", href: "/announcements" },
+  { label: "Calendar", href: "/calendar" },
   { label: "Notification Settings", href: "/settings/notifications" },
   { label: "Email Logs", href: "/settings/email-logs" },
   { label: "SMS Logs", href: "/settings/sms-logs" },

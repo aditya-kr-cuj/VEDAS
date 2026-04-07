@@ -31,6 +31,9 @@ import { studentTestRouter } from './modules/tests/student-test.routes.js';
 import { performanceRouter } from './modules/performance/performance.routes.js';
 import { reportRouter } from './modules/reports/report.routes.js';
 import { announcementRouter } from './modules/announcements/announcement.routes.js';
+import { calendarRouter } from './modules/calendar/calendar.routes.js';
+import { pushRouter } from './modules/push/push.routes.js';
+import { noticeBoardRouter } from './modules/public/notice-board.routes.js';
 
 export function buildApp() {
   const app = express();
@@ -90,6 +93,9 @@ export function buildApp() {
   app.use('/api/v1', performanceRouter);
   app.use('/api/v1', reportRouter);
   app.use('/api/v1/announcements', announcementRouter);
+  app.use('/api/v1/calendar', calendarRouter);
+  app.use('/api/v1/push', pushRouter);
+  app.use('/api/v1/public', noticeBoardRouter);
   app.use('/api/v1/super-admin', superAdminRouter);
 
   app.use(notFoundHandler);
