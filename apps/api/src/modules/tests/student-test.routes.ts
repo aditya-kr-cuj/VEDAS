@@ -1,0 +1,52 @@
+import { Router } from 'express';
+import { asyncHandler } from '../../middleware/async-handler.js';
+import { authenticate, authorize, requireTenant } from '../../middleware/auth.js';
+import {
+  getResultHandler,
+  listStudentTestsHandler,
+  saveAnswerHandler,
+  startTestHandler,
+  submitTestHandler
+} from './student-test.controller.js';
+
+export const studentTestRouter = Router();
+
+studentTestRouter.get(
+  '/student/tests',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(listStudentTestsHandler)
+);
+
+studentTestRouter.post(
+  '/tests/:id/start',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(startTestHandler)
+);
+
+studentTestRouter.post(
+  '/tests/:id/save-answer',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(saveAnswerHandler)
+);
+
+studentTestRouter.post(
+  '/tests/:id/submit',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(submitTestHandler)
+);
+
+studentTestRouter.get(
+  '/tests/:id/result',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(getResultHandler)
+);

@@ -27,6 +27,7 @@ import { tenantRouter } from './modules/tenants/tenant.routes.js';
 import { userRouter } from './modules/users/user.routes.js';
 import { questionRouter } from './modules/exams/question.routes.js';
 import { testRouter } from './modules/tests/test.routes.js';
+import { studentTestRouter } from './modules/tests/student-test.routes.js';
 
 export function buildApp() {
   const app = express();
@@ -82,6 +83,7 @@ export function buildApp() {
   app.use('/api/v1/users', userRouter);
   app.use('/api/v1/questions', questionRouter);
   app.use('/api/v1/tests', testRouter);
+  app.use('/api/v1', studentTestRouter);
   app.use('/api/v1/super-admin', superAdminRouter);
 
   app.use(notFoundHandler);

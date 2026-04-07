@@ -180,6 +180,20 @@ export default function StudentPortalPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Tests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-slate-400">View upcoming and completed assessments.</p>
+          <div className="mt-3">
+            <a href="/portal/student/tests" className="underline text-sm text-white">
+              Open Tests
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Subject-wise Attendance</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-slate-300">
