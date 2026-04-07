@@ -84,6 +84,7 @@ export async function listTests(payload: {
   batchId?: string;
   status?: string;
   createdBy?: string;
+  includeArchived?: boolean;
 }) {
   const where: string[] = ['tenant_id = $1'];
   const values: Array<string> = [payload.tenantId];
@@ -103,6 +104,9 @@ export async function listTests(payload: {
   if (payload.createdBy) {
     where.push(`created_by = $${idx++}`);
     values.push(payload.createdBy);
+  }
+  if (!payload.includeArchived) {
+    where.push(`is_archived = FALSE`);
   }
 
   return query(
@@ -195,6 +199,17 @@ export async function updateTest(payload: {
 
 export async function deleteTest(payload: { tenantId: string; testId: string }) {
   await query(`DELETE FROM tests WHERE tenant_id = $1 AND id = $2`, [payload.tenantId, payload.testId]);
+}
+
+export async function archiveTest(payload: { tenantId: string; testId: string; archived: boolean }) {
+  await query(
+    `
+      UPDATE tests
+      SET is_archived = $1, updated_at = NOW()
+      WHERE tenant_id = $2 AND id = $3
+    `,
+    [payload.archived, payload.tenantId, payload.testId]
+  );
 }
 
 export async function publishTest(payload: { tenantId: string; testId: string; status: string }) {

@@ -29,6 +29,11 @@ export default function StudentTestsPage() {
       <div>
         <h2 className="text-2xl font-semibold text-white">My Tests</h2>
         <p className="text-sm text-slate-400">Upcoming and completed assessments.</p>
+        <div className="mt-2">
+          <Link href="/portal/student/tests/performance" className="text-xs text-blue-300 underline">
+            View Performance Dashboard
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -57,7 +62,7 @@ export default function StudentTestsPage() {
                       <Button size="sm">Start / Resume</Button>
                     </Link>
                   ) : !isUpcoming ? (
-                    <Link href={`/portal/student/tests/${test.id}/review`}>
+                    <Link href={`/portal/student/tests/${test.id}/result`}>
                       <Button size="sm" variant="outline">
                         View Result
                       </Button>

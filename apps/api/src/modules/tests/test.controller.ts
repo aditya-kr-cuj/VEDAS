@@ -5,6 +5,7 @@ import {
   createTest,
   deleteTest,
   ensureQuestionsBelongToCourse,
+  archiveTest,
   getTestById,
   listTests,
   publishTest,
@@ -89,10 +90,19 @@ export async function listTestsHandler(req: Request, res: Response): Promise<voi
     courseId: req.query.course_id?.toString(),
     batchId: req.query.batch_id?.toString(),
     status: req.query.status?.toString(),
-    createdBy
+    createdBy,
+    includeArchived: req.query.include_archived === 'true'
   });
 
   res.status(200).json({ tests });
+}
+
+export async function archiveTestHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+  const archived = req.body?.archived ?? true;
+  await archiveTest({ tenantId, testId: req.params.id, archived });
+  res.status(200).json({ message: archived ? 'Test archived' : 'Test restored' });
 }
 
 export async function getTestHandler(req: Request, res: Response): Promise<void> {

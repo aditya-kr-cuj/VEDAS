@@ -8,6 +8,7 @@ import {
   startTestHandler,
   submitTestHandler
 } from './student-test.controller.js';
+import { studentPerformanceHandler } from './analytics.controller.js';
 
 export const studentTestRouter = Router();
 
@@ -17,6 +18,14 @@ studentTestRouter.get(
   requireTenant,
   authorize(['student']),
   asyncHandler(listStudentTestsHandler)
+);
+
+studentTestRouter.get(
+  '/student/performance/tests',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(studentPerformanceHandler)
 );
 
 studentTestRouter.post(

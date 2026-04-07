@@ -7,6 +7,7 @@ import {
   deleteTestHandler,
   getTestHandler,
   listTestsHandler,
+  archiveTestHandler,
   publishTestHandler,
   updateTestHandler
 } from './test.controller.js';
@@ -15,6 +16,7 @@ import {
   getSubmissionHandler,
   listSubmissionsHandler
 } from './grading.controller.js';
+import { leaderboardHandler, studentPerformanceHandler, testAnalyticsHandler } from './analytics.controller.js';
 import { createTestSchema, testIdParamSchema, updateTestSchema } from './test.schema.js';
 
 export const testRouter = Router();
@@ -71,6 +73,33 @@ testRouter.post(
   authorize(['institute_admin', 'teacher']),
   validateParams(testIdParamSchema),
   asyncHandler(publishTestHandler)
+);
+
+testRouter.patch(
+  '/:id/archive',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  validateParams(testIdParamSchema),
+  asyncHandler(archiveTestHandler)
+);
+
+testRouter.get(
+  '/:id/analytics',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher']),
+  validateParams(testIdParamSchema),
+  asyncHandler(testAnalyticsHandler)
+);
+
+testRouter.get(
+  '/:id/leaderboard',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher', 'student']),
+  validateParams(testIdParamSchema),
+  asyncHandler(leaderboardHandler)
 );
 
 testRouter.get(

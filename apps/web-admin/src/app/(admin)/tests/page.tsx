@@ -18,10 +18,14 @@ type Test = {
 export default function TestsPage() {
   const [tests, setTests] = useState<Test[]>([]);
   const [tab, setTab] = useState<"upcoming" | "ongoing" | "completed">("upcoming");
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
-    api.get("/tests").then((res) => setTests(res.data.tests ?? [])).catch(() => setTests([]));
-  }, []);
+    api
+      .get("/tests", { params: { include_archived: showArchived } })
+      .then((res) => setTests(res.data.tests ?? []))
+      .catch(() => setTests([]));
+  }, [showArchived]);
 
   const filtered = tests.filter((test) => {
     if (tab === "upcoming") return test.status === "scheduled" || test.status === "draft";
@@ -38,6 +42,12 @@ export default function TestsPage() {
   const remove = async (id: string) => {
     await api.delete(`/tests/${id}`);
     setTests((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const archive = async (id: string) => {
+    await api.patch(`/tests/${id}/archive`, { archived: true });
+    const res = await api.get("/tests");
+    setTests(res.data.tests ?? []);
   };
 
   return (
@@ -62,6 +72,10 @@ export default function TestsPage() {
         <Button size="sm" variant={tab === "completed" ? "default" : "outline"} onClick={() => setTab("completed")}>
           Completed
         </Button>
+        <label className="ml-2 flex items-center gap-2 text-xs text-slate-400">
+          <input type="checkbox" checked={showArchived} onChange={() => setShowArchived((v) => !v)} />
+          Show archived
+        </label>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -85,12 +99,21 @@ export default function TestsPage() {
                   <Link href={`/tests/${test.id}/evaluate`} className="text-amber-300">
                     Evaluate
                   </Link>
+                  <Link href={`/tests/${test.id}/analytics`} className="text-sky-300">
+                    Analytics
+                  </Link>
+                  <Link href={`/tests/${test.id}/leaderboard`} className="text-purple-300">
+                    Leaderboard
+                  </Link>
                   <button className="text-emerald-300" onClick={() => publish(test.id)}>
                     Publish
                   </button>
-                <button className="text-red-300" onClick={() => remove(test.id)}>
-                  Delete
-                </button>
+                  <button className="text-slate-300" onClick={() => archive(test.id)}>
+                    Archive
+                  </button>
+                  <button className="text-red-300" onClick={() => remove(test.id)}>
+                    Delete
+                  </button>
               </div>
             </CardContent>
           </Card>
