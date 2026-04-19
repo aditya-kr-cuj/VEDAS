@@ -34,6 +34,9 @@ import { announcementRouter } from './modules/announcements/announcement.routes.
 import { calendarRouter } from './modules/calendar/calendar.routes.js';
 import { pushRouter } from './modules/push/push.routes.js';
 import { noticeBoardRouter } from './modules/public/notice-board.routes.js';
+import { expenseRouter } from './modules/expenses/expense.routes.js';
+import { financialRouter } from './modules/finance/finance.routes.js';
+import { budgetRouter } from './modules/budget/budget.routes.js';
 
 export function buildApp() {
   const app = express();
@@ -96,6 +99,9 @@ export function buildApp() {
   app.use('/api/v1/calendar', calendarRouter);
   app.use('/api/v1/push', pushRouter);
   app.use('/api/v1/public', noticeBoardRouter);
+  app.use('/api/v1/expenses', expenseRouter);
+  app.use('/api/v1/budgets', budgetRouter);
+  app.use('/api/v1/financial', financialRouter);
   app.use('/api/v1/super-admin', superAdminRouter);
 
   app.use(notFoundHandler);

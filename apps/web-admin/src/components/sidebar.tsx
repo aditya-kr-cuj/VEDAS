@@ -30,6 +30,16 @@ const items = [
   { label: "Attendance", href: "/attendance/mark" },
   { label: "Fee Payments", href: "/fees/payments" },
   { label: "Fee Reports", href: "/fees/reports" },
+  { label: "Expenses", href: "/expenses" },
+  { label: "Add Expense", href: "/expenses/new" },
+  { label: "Other Income", href: "/financial/income" },
+  { label: "Budget Planning", href: "/financial/budget" },
+  { label: "Financial Dashboard", href: "/financial/dashboard" },
+  { label: "Tax Settings", href: "/financial/settings" },
+  { label: "GST Reports", href: "/financial/gst" },
+  { label: "Tally Export", href: "/financial/export" },
+  { label: "P&L Report", href: "/financial/pnl" },
+  { label: "Balance Sheet", href: "/financial/balance-sheet" },
   { label: "Profile", href: "/profile" },
 ];
 

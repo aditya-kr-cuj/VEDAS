@@ -1,11 +1,15 @@
+import type { PoolClient } from 'pg';
 import { query, withTransaction } from '../../db/client.js';
 import { HttpError } from '../../utils/http-error.js';
+import { calculateGstAmount, getTaxSettings } from '../finance/tax.repository.js';
 
 export interface PaymentRecord {
   id: string;
   tenant_id: string;
   student_fee_id: string;
   amount: string;
+  gst_amount: string;
+  invoice_number: string | null;
   payment_date: string;
   payment_mode: string;
   transaction_id: string | null;
@@ -25,6 +29,50 @@ function generateReceiptNumber() {
     .toString()
     .padStart(5, '0');
   return `RCPT-${y}${m}${d}-${rand}`;
+}
+
+function getFinancialYearLabel(dateString: string, financialYearStartMonth: number) {
+  const date = new Date(dateString);
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth() + 1;
+  const startYear = month >= financialYearStartMonth ? year : year - 1;
+  const endYearShort = String((startYear + 1) % 100).padStart(2, '0');
+  return `${startYear}-${endYearShort}`;
+}
+
+async function generateInvoiceNumber(params: {
+  client: PoolClient;
+  tenantId: string;
+  paymentDate: string;
+  financialYearStartMonth: number;
+}) {
+  const fyLabel = getFinancialYearLabel(params.paymentDate, params.financialYearStartMonth);
+  const prefix = `INV-${fyLabel}-`;
+
+  await params.client.query(
+    `SELECT pg_advisory_xact_lock(hashtext($1))`,
+    [`invoice:${params.tenantId}:${fyLabel}`]
+  );
+
+  const latestRows = await params.client.query<{ invoice_number: string }>(
+    `SELECT invoice_number
+     FROM fee_payments
+     WHERE tenant_id = $1
+       AND invoice_number LIKE $2
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [params.tenantId, `${prefix}%`]
+  );
+  const latest = latestRows.rows[0];
+
+  let nextNumber = 1;
+  if (latest?.invoice_number) {
+    const tail = latest.invoice_number.split('-').pop();
+    const parsed = Number(tail);
+    if (Number.isFinite(parsed)) nextNumber = parsed + 1;
+  }
+
+  return `${prefix}${String(nextNumber).padStart(5, '0')}`;
 }
 
 export async function recordPayment(payload: {
@@ -56,18 +104,28 @@ export async function recordPayment(payload: {
     }
 
     const receiptNumber = generateReceiptNumber();
+    const taxSettings = await getTaxSettings(payload.tenantId);
+    const gstAmount = calculateGstAmount(payload.amount, taxSettings.tax_rate, taxSettings.tax_regime);
+    const invoiceNumber = await generateInvoiceNumber({
+      client,
+      tenantId: payload.tenantId,
+      paymentDate: payload.paymentDate,
+      financialYearStartMonth: taxSettings.financial_year_start_month
+    });
     const paymentRows = await client.query<PaymentRecord>(
       `
         INSERT INTO fee_payments (
-          tenant_id, student_fee_id, amount, payment_date, payment_mode, transaction_id, receipt_number, collected_by, remarks
+          tenant_id, student_fee_id, amount, gst_amount, invoice_number, payment_date, payment_mode, transaction_id, receipt_number, collected_by, remarks
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
         RETURNING *
       `,
       [
         payload.tenantId,
         payload.studentFeeId,
         payload.amount,
+        gstAmount,
+        invoiceNumber,
         payload.paymentDate,
         payload.paymentMode,
         payload.transactionId ?? null,
@@ -124,8 +182,10 @@ export async function findPaymentById(payload: { tenantId: string; paymentId: st
 export async function getReceiptDetails(payload: { tenantId: string; paymentId: string }) {
   const rows = await query<{
     payment_id: string;
+    invoice_number: string | null;
     receipt_number: string;
     amount: string;
+    gst_amount: string;
     payment_date: string;
     payment_mode: string;
     transaction_id: string | null;
@@ -143,8 +203,10 @@ export async function getReceiptDetails(payload: { tenantId: string; paymentId: 
     `
       SELECT
         p.id AS payment_id,
+        p.invoice_number,
         p.receipt_number,
         p.amount,
+        p.gst_amount,
         p.payment_date,
         p.payment_mode,
         p.transaction_id,

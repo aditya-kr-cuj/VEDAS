@@ -1,3 +1,6 @@
+-- GIN full-text search on static text columns (title, description, topic).
+-- PostgreSQL does NOT support subqueries in index expressions,
+-- so tags (JSONB) are handled via a separate GIN index below.
 CREATE INDEX IF NOT EXISTS idx_study_materials_search
 ON study_materials
 USING GIN (
@@ -5,10 +8,11 @@ USING GIN (
     'simple',
     COALESCE(title, '') || ' ' ||
     COALESCE(description, '') || ' ' ||
-    COALESCE(topic, '') || ' ' ||
-    COALESCE((
-      SELECT string_agg(value, ' ')
-      FROM jsonb_array_elements_text(tags) AS t(value)
-    ), '')
+    COALESCE(topic, '')
   )
 );
+
+-- Separate GIN index for JSONB tags (@> and ? operator support)
+CREATE INDEX IF NOT EXISTS idx_study_materials_tags
+ON study_materials
+USING GIN (tags);

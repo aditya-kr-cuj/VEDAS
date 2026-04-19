@@ -57,6 +57,7 @@ export async function receiptHandler(req: Request, res: Response): Promise<void>
   doc.moveDown();
 
   doc.fontSize(12).text(`Receipt No: ${receipt.receipt_number}`);
+  if (receipt.invoice_number) doc.text(`Invoice No: ${receipt.invoice_number}`);
   doc.text(`Payment Date: ${receipt.payment_date}`);
   doc.text(`Payment Mode: ${receipt.payment_mode}`);
   if (receipt.transaction_id) doc.text(`Transaction ID: ${receipt.transaction_id}`);
@@ -65,6 +66,7 @@ export async function receiptHandler(req: Request, res: Response): Promise<void>
   doc.fontSize(12).text(`Student: ${receipt.student_name}`);
   doc.text(`Student Email: ${receipt.student_email}`);
   doc.text(`Amount Paid: ₹${receipt.amount}`);
+  doc.text(`GST Amount: ₹${receipt.gst_amount}`);
   doc.text(`Total Amount: ₹${receipt.total_amount}`);
   doc.text(`Paid Amount: ₹${receipt.paid_amount}`);
   doc.text(`Due Amount: ₹${receipt.due_amount}`);

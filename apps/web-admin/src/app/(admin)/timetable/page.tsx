@@ -132,8 +132,8 @@ export default function TimetablePage() {
         );
       })
       .forEach((entry) => {
-      map.set(`${entry.dayOfWeek}-${entry.timeSlotId}`, entry);
-    });
+        map.set(`${entry.dayOfWeek}-${entry.timeSlotId}`, entry);
+      });
     return map;
   }, [entries, roomFilter, search]);
 
@@ -415,7 +415,7 @@ export default function TimetablePage() {
         {error && <p className="text-sm text-red-300">{error}</p>}
         <div className="flex flex-wrap gap-2">
           <Button onClick={submit} disabled={!selectedBatch || !form.timeSlotId}>
-          Create Entry
+            Create Entry
           </Button>
           <Button variant="outline" onClick={() => downloadICS(filteredEntries, "timetable.ics")}>
             Export to Calendar
@@ -548,44 +548,43 @@ export default function TimetablePage() {
           </div>
         </div>
         <div className="hidden md:block">
-        <div className="grid gap-2">
-          <div className="grid grid-cols-[160px_repeat(7,minmax(120px,1fr))] gap-2 text-xs text-slate-400">
-            <div>Time</div>
-            {days.map((day) => (
-              <div key={day} className="uppercase">
-                {day}
+          <div className="grid gap-2">
+            <div className="grid grid-cols-[160px_repeat(7,minmax(120px,1fr))] gap-2 text-xs text-slate-400">
+              <div>Time</div>
+              {days.map((day) => (
+                <div key={day} className="uppercase">
+                  {day}
+                </div>
+              ))}
+            </div>
+            {timeSlots.map((slot) => (
+              <div key={slot.id} className="grid grid-cols-[160px_repeat(7,minmax(120px,1fr))] gap-2">
+                <div className="text-xs text-slate-300">
+                  Slot {slot.slot_number} {slot.start_time}-{slot.end_time}
+                </div>
+                {days.map((day) => {
+                  const entry = grid.get(`${day}-${slot.id}`);
+                  return (
+                    <div
+                      key={day}
+                      className={`min-h-[52px] rounded-lg border border-white/10 p-2 text-xs ${entry ? "bg-emerald-500/20 text-emerald-100" : "bg-white/5 text-slate-400"
+                        }`}
+                    >
+                      {entry ? (
+                        <div>
+                          <p className="font-semibold">{entry.courseName}</p>
+                          <p>{entry.teacherName}</p>
+                          <p className="text-[10px]">{entry.roomName}</p>
+                        </div>
+                      ) : (
+                        <p>—</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
-          {timeSlots.map((slot) => (
-            <div key={slot.id} className="grid grid-cols-[160px_repeat(7,minmax(120px,1fr))] gap-2">
-              <div className="text-xs text-slate-300">
-                Slot {slot.slot_number} {slot.start_time}-{slot.end_time}
-              </div>
-              {days.map((day) => {
-                const entry = grid.get(`${day}-${slot.id}`);
-                return (
-                  <div
-                    key={day}
-                    className={`min-h-[52px] rounded-lg border border-white/10 p-2 text-xs ${
-                      entry ? "bg-emerald-500/20 text-emerald-100" : "bg-white/5 text-slate-400"
-                    }`}
-                  >
-                    {entry ? (
-                      <div>
-                        <p className="font-semibold">{entry.courseName}</p>
-                        <p>{entry.teacherName}</p>
-                        <p className="text-[10px]">{entry.roomName}</p>
-                      </div>
-                    ) : (
-                      <p>—</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
         </div>
       </Card>
 
@@ -611,9 +610,8 @@ export default function TimetablePage() {
                   return (
                     <div
                       key={day}
-                      className={`min-h-[52px] rounded-lg border border-white/10 p-2 text-xs ${
-                        entry ? "bg-blue-500/20 text-blue-100" : "bg-white/5 text-slate-400"
-                      }`}
+                      className={`min-h-[52px] rounded-lg border border-white/10 p-2 text-xs ${entry ? "bg-blue-500/20 text-blue-100" : "bg-white/5 text-slate-400"
+                        }`}
                     >
                       {entry ? (
                         <div>
