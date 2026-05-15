@@ -70,10 +70,11 @@ export async function assignFeeStructure(payload: {
   dueDate: string;
 }) {
   return withTransaction(async (client) => {
-    const [structure] = await client.query<FeeStructureRecord>(
+    const structureResult = await client.query<FeeStructureRecord>(
       `SELECT * FROM fee_structures WHERE tenant_id = $1 AND id = $2 LIMIT 1`,
       [payload.tenantId, payload.feeStructureId]
     );
+    const structure = structureResult.rows[0];
     if (!structure) throw new HttpError(404, 'Fee structure not found');
 
     for (const studentId of payload.studentIds) {

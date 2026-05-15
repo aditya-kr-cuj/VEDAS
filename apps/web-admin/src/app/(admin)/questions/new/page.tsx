@@ -1,16 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-import "react-quill/dist/quill.snow.css";
 
 type Course = { id: string; name: string };
 
@@ -18,9 +14,8 @@ type Option = { option_text: string; is_correct: boolean };
 type Blank = { blank_position: number; correct_answer: string; case_sensitive: boolean };
 
 export default function QuestionFormPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const editId = searchParams.get("id");
+  const [editId, setEditId] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseId, setCourseId] = useState("");
   const [topic, setTopic] = useState("");
@@ -39,6 +34,10 @@ export default function QuestionFormPage() {
   const [mediaUrl, setMediaUrl] = useState("");
   const [explanation, setExplanation] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEditId(new URLSearchParams(window.location.search).get("id"));
+  }, []);
 
   useEffect(() => {
     api.get("/courses").then((res) => setCourses(res.data.courses ?? [])).catch(() => setCourses([]));
@@ -180,9 +179,11 @@ export default function QuestionFormPage() {
 
           <div>
             <Label>Question Text</Label>
-            <div className="mt-2 rounded-md border border-white/10 bg-white text-black">
-              <ReactQuill value={questionText} onChange={setQuestionText} />
-            </div>
+            <textarea
+              className="mt-2 min-h-48 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-sm text-slate-200"
+              value={questionText}
+              onChange={(e) => setQuestionText(e.target.value)}
+            />
           </div>
 
           {questionType === "mcq" || questionType === "multi_select" || questionType === "true_false" ? (

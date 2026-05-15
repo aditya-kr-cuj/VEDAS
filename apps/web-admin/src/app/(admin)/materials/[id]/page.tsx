@@ -12,7 +12,7 @@ type MaterialDetail = Material & {
   course_id: string;
   batch_id: string | null;
   topic: string | null;
-  tags: string[] | null;
+  tags: string[] | string | null;
 };
 
 export default function MaterialDetailPage() {

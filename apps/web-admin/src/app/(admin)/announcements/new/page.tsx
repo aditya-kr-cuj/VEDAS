@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-import "react-quill/dist/quill.snow.css";
 
 type Batch = { id: string; name: string };
 type User = { id: string; full_name: string; email: string; role: string };
@@ -106,9 +102,11 @@ export default function AnnouncementCreatePage() {
             </div>
             <div className="md:col-span-2">
               <Label>Message</Label>
-              <div className="mt-2 rounded-md border border-white/10 bg-white text-black">
-                <ReactQuill value={message} onChange={setMessage} />
-              </div>
+              <textarea
+                className="mt-2 min-h-48 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-sm text-slate-200"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
             </div>
           </div>
 

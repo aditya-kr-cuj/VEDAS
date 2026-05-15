@@ -49,6 +49,7 @@ export default function TeacherPortalPage() {
       courseName: string;
       batchName: string;
       roomName: string;
+      batchId?: string;
     }>
   >([]);
   const [fullName, setFullName] = useState(user?.fullName ?? "");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +37,7 @@ type StudentFee = {
 export default function StudentPortalPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [paymentQuery, setPaymentQuery] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
@@ -123,10 +123,14 @@ export default function StudentPortalPage() {
   };
 
   useEffect(() => {
-    const status = searchParams.get("payment");
+    setPaymentQuery(new URLSearchParams(window.location.search).get("payment"));
+  }, []);
+
+  useEffect(() => {
+    const status = paymentQuery;
     if (status === "success") setPaymentStatus("Payment successful. It may take a moment to reflect.");
     if (status === "failed") setPaymentStatus("Payment failed. Please try again.");
-  }, [searchParams]);
+  }, [paymentQuery]);
 
   return (
     <div className="space-y-6">

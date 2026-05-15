@@ -5,11 +5,12 @@ import { emailQueue } from '../modules/notifications/email.queue.js';
 import { sendEmail } from '../utils/email.js';
 import { buildEmailTemplate } from '../utils/email-templates.js';
 import { markEmailLogFailed, markEmailLogSent } from '../modules/notifications/email.repository.js';
+import type Bull from 'bull';
 
 const PREFIX = '[EmailWorker]';
 
 // ── Process jobs ────────────────────────────────────────────────
-emailQueue.process(async (job) => {
+emailQueue.process(async (job: Bull.Job) => {
   const { logId, to, templateName, data } = job.data;
   console.log(`${PREFIX} Processing job ${job.id} — template=${templateName} to=${to}`);
 
@@ -27,19 +28,19 @@ emailQueue.process(async (job) => {
 });
 
 // ── Event listeners ─────────────────────────────────────────────
-emailQueue.on('completed', (job) => {
+emailQueue.on('completed', (job: Bull.Job) => {
   console.log(`${PREFIX} Job ${job.id} completed`);
 });
 
-emailQueue.on('failed', (job, err) => {
+emailQueue.on('failed', (job: Bull.Job, err: Error) => {
   console.error(`${PREFIX} Job ${job.id} failed after ${job.attemptsMade} attempts — ${err.message}`);
 });
 
-emailQueue.on('stalled', (jobId) => {
+emailQueue.on('stalled', (jobId: string) => {
   console.warn(`${PREFIX} Job ${jobId} stalled — will be reprocessed`);
 });
 
-emailQueue.on('error', (err) => {
+emailQueue.on('error', (err: Error) => {
   console.error(`${PREFIX} Queue error —`, err.message);
 });
 

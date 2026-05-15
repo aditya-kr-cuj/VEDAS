@@ -2,8 +2,9 @@ import { emailQueue } from './email.queue.js';
 import { sendEmail } from '../../utils/email.js';
 import { buildEmailTemplate } from '../../utils/email-templates.js';
 import { markEmailLogFailed, markEmailLogSent } from './email.repository.js';
+import type Bull from 'bull';
 
-emailQueue.process(async (job) => {
+emailQueue.process(async (job: Bull.Job) => {
   const { logId, to, templateName, data } = job.data;
   try {
     const template = buildEmailTemplate(templateName, data);

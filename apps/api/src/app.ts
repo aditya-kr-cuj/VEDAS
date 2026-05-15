@@ -1,5 +1,5 @@
 import cors from 'cors';
-import express from 'express';
+import express, { type Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { env } from './config/env.js';
@@ -52,8 +52,9 @@ export function buildApp() {
     express.json({
       limit: '1mb',
       verify: (req, _res, buf) => {
-        if (req.originalUrl === '/api/v1/fees/webhook/razorpay') {
-          req.bodyRaw = buf.toString('utf8');
+        const request = req as Request;
+        if (request.originalUrl === '/api/v1/fees/webhook/razorpay') {
+          request.bodyRaw = buf.toString('utf8');
         }
       }
     })

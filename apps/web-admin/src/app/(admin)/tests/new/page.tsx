@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,8 +24,7 @@ function stripHtml(html: string) {
 
 export default function TestBuilderPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const editId = searchParams.get("id");
+  const [editId, setEditId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [courses, setCourses] = useState<Course[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -48,6 +47,10 @@ export default function TestBuilderPage() {
     () => Object.entries(selected).filter(([, v]) => v).map(([id]) => id),
     [selected]
   );
+
+  useEffect(() => {
+    setEditId(new URLSearchParams(window.location.search).get("id"));
+  }, []);
 
   useEffect(() => {
     api.get("/courses").then((res) => setCourses(res.data.courses ?? [])).catch(() => setCourses([]));

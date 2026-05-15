@@ -158,10 +158,11 @@ export async function getResult(payload: { attemptId: string }) {
 
 export async function gradeAttempt(payload: { attemptId: string; testId: string }) {
   return withTransaction(async (client) => {
-    const [test] = await client.query(
+    const testResult = await client.query<{ negative_marking: string | null }>(
       `SELECT negative_marking FROM tests WHERE id = $1`,
       [payload.testId]
     );
+    const test = testResult.rows[0];
     const negativeMark = Number(test?.negative_marking ?? 0);
     const answers = await client.query(
       `SELECT * FROM test_answers WHERE attempt_id = $1`,

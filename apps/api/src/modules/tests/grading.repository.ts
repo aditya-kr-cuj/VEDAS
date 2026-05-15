@@ -82,7 +82,7 @@ export async function applyEvaluation(payload: {
       );
     }
 
-    const [sum] = await client.query<{ total: string }>(
+    const sumResult = await client.query<{ total: string }>(
       `
         SELECT COALESCE(SUM(marks_obtained),0)::text AS total
         FROM test_answers
@@ -90,8 +90,9 @@ export async function applyEvaluation(payload: {
       `,
       [payload.attemptId]
     );
+    const sum = sumResult.rows[0];
 
-    const [pending] = await client.query<{ count: string }>(
+    const pendingResult = await client.query<{ count: string }>(
       `
         SELECT COUNT(*)::text AS count
         FROM test_answers a
@@ -100,6 +101,7 @@ export async function applyEvaluation(payload: {
       `,
       [payload.attemptId]
     );
+    const pending = pendingResult.rows[0];
 
     const status = Number(pending?.count ?? 0) === 0 ? 'evaluated' : 'submitted';
     await client.query(

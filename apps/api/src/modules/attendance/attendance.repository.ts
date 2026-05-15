@@ -38,7 +38,7 @@ export async function markAttendanceBulk(payload: {
 
     for (const entry of payload.attendance) {
       // Optional: ensure student belongs to batch if mapping exists
-      const [membership] = await client.query<{ id: string }>(
+      const membershipResult = await client.query<{ id: string }>(
         `
           SELECT bs.id
           FROM batch_students bs
@@ -48,6 +48,7 @@ export async function markAttendanceBulk(payload: {
         `,
         [payload.batchId, entry.studentId]
       );
+      const membership = membershipResult.rows[0];
       if (!membership) {
         throw new HttpError(400, `Student ${entry.studentId} is not assigned to this batch`);
       }

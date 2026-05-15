@@ -1,23 +1,25 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine AS deps
 WORKDIR /app
-
-FROM base AS deps
 COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
 COPY apps/web-admin/package.json apps/web-admin/package.json
-RUN npm install
+COPY packages/common/package.json packages/common/package.json
+RUN npm ci --legacy-peer-deps
 
-FROM base AS build
+FROM node:20-alpine AS build
+WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
 COPY . .
-WORKDIR /app/apps/web-admin
-RUN npm run build
+RUN npm run build --workspace web-admin
 
-FROM base AS runtime
+FROM node:20-alpine AS runtime
 ENV NODE_ENV=production
-WORKDIR /app/apps/web-admin
+WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/package-lock.json /app/package-lock.json
+COPY --from=build /app/apps/web-admin/package.json /app/apps/web-admin/package.json
 COPY --from=build /app/apps/web-admin/.next /app/apps/web-admin/.next
 COPY --from=build /app/apps/web-admin/public /app/apps/web-admin/public
-COPY --from=build /app/apps/web-admin/package.json /app/apps/web-admin/package.json
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "start", "--workspace", "web-admin"]

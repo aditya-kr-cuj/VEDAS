@@ -9,6 +9,7 @@ import {
 } from './performance.repository.js';
 import { getTeacherPerformance, listTeachersPerformance } from './teacher-performance.repository.js';
 import { findStudentProfileByUserId } from '../students/student.repository.js';
+import { findTeacherProfileByUserId } from '../teachers/teacher.repository.js';
 
 export async function performanceOverviewHandler(req: Request, res: Response): Promise<void> {
   const tenantId = req.tenantId;

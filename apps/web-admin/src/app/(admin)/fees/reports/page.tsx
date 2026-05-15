@@ -80,7 +80,8 @@ export default function FeeReportsPage() {
     const lines = rows.map(
       (r) => `${r.student_id},${r.student_name},${r.student_email},${r.due_amount},${r.due_date}`
     );
-    const blob = new Blob([header, "\n", ...lines].join("\n"), { type: "text/csv" });
+    const csv = [header, ...lines].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

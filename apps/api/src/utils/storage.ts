@@ -104,8 +104,9 @@ export async function uploadToS3(payload: {
 
   if (payload.onProgress) {
     upload.on('httpUploadProgress', (progress) => {
+      const loaded = progress.loaded ?? 0;
       if (!progress.total) return;
-      const percent = Math.round((progress.loaded / progress.total) * 100);
+      const percent = Math.round((loaded / progress.total) * 100);
       payload.onProgress?.(percent);
     });
   }

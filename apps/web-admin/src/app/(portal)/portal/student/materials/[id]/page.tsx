@@ -14,7 +14,7 @@ type MaterialDetail = {
   download_count: number;
   download_url?: string;
   topic: string | null;
-  tags: string[] | null;
+  tags: string[] | string | null;
   created_at: string;
 };
 

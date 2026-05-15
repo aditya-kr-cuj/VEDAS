@@ -863,10 +863,11 @@ export async function grantMaterialAccess(payload: {
   batchIds?: string[];
 }) {
   await withTransaction(async (client) => {
-    const [material] = await client.query(
+    const materialResult = await client.query<{ id: string }>(
       `SELECT id FROM study_materials WHERE tenant_id = $1 AND id = $2 AND is_deleted = FALSE`,
       [payload.tenantId, payload.materialId]
     );
+    const material = materialResult.rows[0];
     if (!material) {
       throw new HttpError(404, 'Material not found');
     }
@@ -1005,16 +1006,18 @@ export async function saveMaterialVersion(payload: {
   fileSize: number;
 }) {
   return withTransaction(async (client) => {
-    const [current] = await client.query<{ file_type: string; file_url: string; file_size: string }>(
+    const currentResult = await client.query<{ file_type: string; file_url: string; file_size: string }>(
       `SELECT file_type, file_url, file_size FROM study_materials WHERE tenant_id = $1 AND id = $2`,
       [payload.tenantId, payload.materialId]
     );
+    const current = currentResult.rows[0];
     if (!current) throw new HttpError(404, 'Material not found');
 
-    const [latest] = await client.query<{ version_number: number }>(
+    const latestResult = await client.query<{ version_number: number }>(
       `SELECT COALESCE(MAX(version_number), 0)::int AS version_number FROM material_versions WHERE material_id = $1`,
       [payload.materialId]
     );
+    const latest = latestResult.rows[0];
     const nextVersion = (latest?.version_number ?? 0) + 1;
 
     await client.query(

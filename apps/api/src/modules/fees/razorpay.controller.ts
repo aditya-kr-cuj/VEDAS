@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import type { PaymentLinks } from 'razorpay/dist/types/paymentLink.js';
 import { HttpError } from '../../utils/http-error.js';
 import { getRazorpayClient, verifyWebhookSignature } from './razorpay.service.js';
 import { recordPayment } from './payment.repository.js';
@@ -13,8 +14,28 @@ export async function createPaymentLinkHandler(req: Request, res: Response): Pro
   const razorpay = getRazorpayClient();
   if (!razorpay) throw new HttpError(500, 'Razorpay not configured');
 
-  const [fee] = await query<{ id: string; due_amount: string; student_id: string }>(
-    `SELECT id, due_amount, student_id FROM student_fees WHERE tenant_id = $1 AND id = $2 LIMIT 1`,
+  const [fee] = await query<{
+    id: string;
+    due_amount: string;
+    student_id: string;
+    student_name: string | null;
+    student_email: string | null;
+    student_phone: string | null;
+  }>(
+    `
+      SELECT
+        sf.id,
+        sf.due_amount,
+        sf.student_id,
+        u.full_name AS student_name,
+        u.email AS student_email,
+        u.phone AS student_phone
+      FROM student_fees sf
+      JOIN students s ON s.id = sf.student_id
+      JOIN users u ON u.id = s.user_id
+      WHERE sf.tenant_id = $1 AND sf.id = $2
+      LIMIT 1
+    `,
     [tenantId, req.body.studentFeeId]
   );
   if (!fee) throw new HttpError(404, 'Student fee record not found');
@@ -31,10 +52,15 @@ export async function createPaymentLinkHandler(req: Request, res: Response): Pro
   const amount = Math.min(Number(fee.due_amount), req.body.amount);
   if (amount <= 0) throw new HttpError(400, 'No dues remaining');
 
-  const paymentLink = await razorpay.paymentLink.create({
+  const paymentPayload: PaymentLinks.RazorpayPaymentLinkCreateRequestBody = {
     amount: Math.round(amount * 100),
     currency: 'INR',
     description: 'VEDAS fee payment',
+    customer: {
+      name: fee.student_name ?? 'Student',
+      email: fee.student_email ?? 'student@vedas.app',
+      contact: (fee.student_phone ?? '').replace(/\D/g, '').slice(-10) || '9000000000'
+    },
     callback_url: `${env.APP_BASE_URL}/portal/student?payment=success`,
     callback_method: 'get',
     notes: {
@@ -42,7 +68,8 @@ export async function createPaymentLinkHandler(req: Request, res: Response): Pro
       studentFeeId: fee.id,
       studentId: fee.student_id
     }
-  });
+  };
+  const paymentLink = await razorpay.paymentLink.create(paymentPayload);
 
   res.status(201).json({ link: paymentLink.short_url, id: paymentLink.id });
 }
@@ -93,7 +120,7 @@ export async function razorpayWebhookHandler(req: Request, res: Response): Promi
     paymentDate: new Date().toISOString().slice(0, 10),
     transactionId: payload.id,
     remarks: 'Razorpay payment',
-    collectedBy: null
+    collectedBy: undefined
   });
 
   res.status(200).json({ received: true });

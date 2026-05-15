@@ -1,10 +1,9 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../middleware/async-handler.js';
 import { authenticate, authorize, requireTenant } from '../../middleware/auth.js';
-import { validateParams } from '../../middleware/validate.js';
+import { validateBody, validateParams } from '../../middleware/validate.js';
 import { getMyTeacherProfileHandler, listTeacherBatchesHandler } from './teacher.controller.js';
 import { teacherIdParamSchema } from './teacher.schema.js';
-import { validateBody, validateParams } from '../../middleware/validate.js';
 import {
   createAvailabilityHandler,
   deleteAvailabilityHandler,
