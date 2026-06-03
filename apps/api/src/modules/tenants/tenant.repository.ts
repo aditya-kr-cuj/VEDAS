@@ -4,6 +4,7 @@ export interface TenantRecord {
   id: string;
   name: string;
   slug: string;
+  tenant_code: string;
   owner_email: string;
   phone: string | null;
   plan_key: string | null;
@@ -19,6 +20,15 @@ export interface TenantRecord {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+function generateTenantCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 3; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  code += '-';
+  for (let i = 0; i < 3; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
 }
 
 export async function createTenant(
@@ -40,11 +50,14 @@ export async function createTenant(
     customDomain?: string;
   }
 ): Promise<TenantRecord> {
+  const tenantCode = generateTenantCode();
+
   const result = await client.query<TenantRecord>(
     `
       INSERT INTO tenants (
         name,
         slug,
+        tenant_code,
         owner_email,
         phone,
         plan_key,
@@ -58,12 +71,13 @@ export async function createTenant(
         subdomain,
         custom_domain
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *
     `,
     [
       payload.name,
       payload.slug,
+      tenantCode,
       payload.ownerEmail.toLowerCase(),
       payload.phone ?? null,
       payload.planKey ?? null,
@@ -91,6 +105,12 @@ export async function findTenantBySlug(slug: string): Promise<TenantRecord | nul
 export async function findTenantById(id: string): Promise<TenantRecord | null> {
   const { query } = await import('../../db/client.js');
   const rows = await query<TenantRecord>('SELECT * FROM tenants WHERE id = $1 LIMIT 1', [id]);
+  return rows[0] ?? null;
+}
+
+export async function findTenantByCode(code: string): Promise<TenantRecord | null> {
+  const { query } = await import('../../db/client.js');
+  const rows = await query<TenantRecord>('SELECT * FROM tenants WHERE tenant_code = $1 LIMIT 1', [code.toUpperCase()]);
   return rows[0] ?? null;
 }
 

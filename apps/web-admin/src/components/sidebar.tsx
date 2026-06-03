@@ -43,14 +43,14 @@ const items = [
   { label: "Profile", href: "/profile" },
 ];
 
-export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function Sidebar({ instituteName, onNavigate }: { instituteName?: string; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
     <aside className="flex h-full w-64 flex-col gap-6 border-r border-white/10 bg-slate-950/60 p-6">
       <div>
         <p className="text-xs uppercase tracking-[0.3em] text-slate-400">VEDAS</p>
-        <h2 className="mt-2 text-xl font-semibold">Institute Admin</h2>
+        <h2 className="mt-2 text-xl font-semibold">{instituteName ?? "Institute Admin"}</h2>
       </div>
       <nav className="flex flex-col gap-2 text-sm">
         {items.map((item) => {

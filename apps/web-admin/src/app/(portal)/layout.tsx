@@ -10,8 +10,24 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !accessToken) {
-      router.replace("/login");
+    if (isLoading) {
+      return;
+    }
+
+    const userStr = localStorage.getItem("vedas_user");
+    const storedUser = userStr ? (JSON.parse(userStr) as { role?: string }) : null;
+
+    if (!accessToken || !storedUser) {
+      router.replace("/portal-login");
+      return;
+    }
+
+    if (storedUser.role !== "student" && storedUser.role !== "teacher") {
+      if (storedUser.role === "institute_admin") {
+        router.replace("/dashboard");
+        return;
+      }
+      router.replace("/portal-login");
     }
   }, [accessToken, isLoading, router]);
 

@@ -4,19 +4,75 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { accessToken, isLoading } = useAuth();
+  const { accessToken, isLoading, user: authUser } = useAuth();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [instituteName, setInstituteName] = useState<string | undefined>(authUser?.tenantName);
 
   useEffect(() => {
-    if (!isLoading && !accessToken) {
+    if (isLoading) {
+      return;
+    }
+
+    const storedAccessToken = localStorage.getItem("vedas_access_token");
+    const userStr = localStorage.getItem("vedas_user");
+    const user = userStr ? (JSON.parse(userStr) as { role?: string }) : null;
+
+    if ((!accessToken && !storedAccessToken) || !user) {
+      router.replace("/login");
+      return;
+    }
+
+    if (user.role !== "institute_admin") {
+      if (user.role === "student" || user.role === "teacher") {
+        router.replace("/portal/student");
+        return;
+      }
       router.replace("/login");
     }
   }, [accessToken, isLoading, router]);
+
+  useEffect(() => {
+    if (authUser?.tenantName) {
+      setInstituteName(authUser.tenantName);
+      document.title = `${authUser.tenantName} | VEDAS`;
+    }
+  }, [authUser?.tenantName]);
+
+  useEffect(() => {
+    if (isLoading || (!accessToken && !localStorage.getItem("vedas_access_token"))) {
+      return;
+    }
+
+    let active = true;
+    api
+      .get("/tenant/me")
+      .then((response) => {
+        const name = response.data?.name;
+        if (active && typeof name === "string" && name.trim()) {
+          setInstituteName(name);
+          const userStr = localStorage.getItem("vedas_user");
+          if (userStr) {
+            localStorage.setItem("vedas_user", JSON.stringify({ ...JSON.parse(userStr), tenantName: name }));
+          }
+          document.title = `${name} | VEDAS`;
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setInstituteName(undefined);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken, isLoading]);
 
   return (
     <div className="min-h-screen">
@@ -28,16 +84,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             menuOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          <Sidebar onNavigate={() => setMenuOpen(false)} />
+          <Sidebar instituteName={instituteName} onNavigate={() => setMenuOpen(false)} />
         </div>
       </div>
 
       <div className="hidden md:fixed md:inset-y-0 md:left-0 md:z-40 md:block md:w-64">
-        <Sidebar />
+        <Sidebar instituteName={instituteName} />
       </div>
 
       <div className="md:pl-64">
-        <Topbar onMenu={() => setMenuOpen(true)} />
+        <Topbar instituteName={instituteName} onMenu={() => setMenuOpen(true)} />
         <main className="p-6">{children}</main>
       </div>
     </div>

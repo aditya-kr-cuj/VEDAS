@@ -11,6 +11,10 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 
 const schema = z.object({
+  tenantCode: z
+    .string()
+    .min(1, "Institute code is required")
+    .transform((v) => v.toUpperCase()),
   email: z.string().email(),
   password: z.string().min(6),
 });
@@ -33,7 +37,7 @@ export default function LoginPage() {
   const onSubmit = async (values: FormValues) => {
     setError(null);
     try {
-      await login(values.email, values.password);
+      await login(values.email, values.password, values.tenantCode);
       const stored = window.localStorage.getItem("vedas_user");
       const role = stored ? (JSON.parse(stored) as { role?: string }).role : undefined;
       if (role === "student") {
@@ -61,11 +65,26 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">VEDAS</p>
-          <h1 className="mt-3 text-3xl font-semibold">Admin Login</h1>
+          <h1 className="mt-3 text-3xl font-semibold">Institute Login</h1>
           <p className="mt-2 text-sm text-slate-400">Sign in to manage your institute.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="tenantCode">Institute Code</Label>
+            <Input
+              id="tenantCode"
+              type="text"
+              placeholder="e.g. VDT-A7K"
+              className="font-mono uppercase tracking-wider"
+              {...register("tenantCode")}
+            />
+            {errors.tenantCode && <p className="text-xs text-red-300">{errors.tenantCode.message}</p>}
+            <p className="text-xs text-slate-500">
+              Your institute code was provided during registration.
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" placeholder="admin@institute.com" {...register("email")} />
@@ -78,7 +97,11 @@ export default function LoginPage() {
             {errors.password && <p className="text-xs text-red-300">{errors.password.message}</p>}
           </div>
 
-          {error && <p className="text-sm text-red-300">{error}</p>}
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Login"}
@@ -87,6 +110,12 @@ export default function LoginPage() {
         <div className="mt-4 text-center text-sm text-slate-400">
           <a href="/reset-password" className="underline hover:text-white">
             Forgot password?
+          </a>
+        </div>
+        <div className="mt-3 text-center text-sm text-slate-500">
+          Not an admin?{" "}
+          <a href="/portal-login" className="text-[#86e3ce] hover:text-[#6fd6bf] hover:underline">
+            Login as Student/Teacher
           </a>
         </div>
       </div>

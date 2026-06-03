@@ -62,3 +62,11 @@ temp/
 .env.test.local
 .env.production.local
 
+# Next.js build output
+.next/
+**/.next/
+
+# Local env files
+.env
+.env.*
+*.local

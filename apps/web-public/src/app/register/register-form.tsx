@@ -12,15 +12,20 @@ import { api } from "@/lib/api";
 import { CheckCircle2, ArrowRight, ArrowLeft, Building2, User, CreditCard } from "lucide-react";
 
 const schema = z.object({
-  instituteName: z.string().min(2, "Institute name is required"),
+  instituteName: z.string().min(3, "Institute name must be at least 3 characters"),
   instituteSlug: z
     .string()
     .min(3, "Slug must be at least 3 characters")
     .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
-  ownerName: z.string().min(2, "Owner name is required"),
+  ownerName: z.string().min(3, "Owner name must be at least 3 characters"),
   ownerEmail: z.string().email("Valid email required"),
   ownerPhone: z.string().optional(),
-  password: z.string().min(8, "Minimum 8 characters"),
+  password: z
+    .string()
+    .min(8, "Minimum 8 characters")
+    .regex(/[A-Z]/, "Password must include one uppercase letter")
+    .regex(/[a-z]/, "Password must include one lowercase letter")
+    .regex(/[0-9]/, "Password must include one number"),
   planKey: z.enum(["starter", "growth", "pro"]),
   addressLine1: z.string().optional(),
   city: z.string().optional(),
@@ -41,6 +46,7 @@ export function RegisterForm() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [tenantCode, setTenantCode] = useState<string | null>(null);
 
   const {
     register,
@@ -52,7 +58,9 @@ export function RegisterForm() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      planKey: (searchParams.get("plan") as "starter" | "growth" | "pro") || "growth",
+      planKey: ["starter", "growth", "pro"].includes(searchParams.get("plan") ?? "")
+        ? (searchParams.get("plan") as "starter" | "growth" | "pro")
+        : "growth",
     },
   });
 
@@ -71,7 +79,11 @@ export function RegisterForm() {
   const onSubmit = async (values: FormValues) => {
     setError(null);
     try {
-      await api.post("/auth/register-institute", values);
+      const payload = Object.fromEntries(
+        Object.entries(values).filter(([, value]) => value !== "" && value !== undefined)
+      );
+      const response = await api.post("/auth/register-institute", payload);
+      setTenantCode(response.data?.tenant?.tenantCode ?? null);
       setSuccess(true);
     } catch (err: unknown) {
       const message =
@@ -93,6 +105,12 @@ export function RegisterForm() {
           <p className="mt-4 text-slate-400">
             Your institute has been registered. Check your email for login credentials and next steps.
           </p>
+          {tenantCode && (
+            <div className="mt-6 rounded-xl border border-[#86e3ce]/20 bg-[#86e3ce]/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Institute Code</p>
+              <p className="mt-1 font-mono text-2xl font-semibold text-[#86e3ce]">{tenantCode}</p>
+            </div>
+          )}
           <a
             href="/login-options"
             className="mt-8 inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-[#1a1a1a] bg-gradient-to-r from-[#f4b860] to-[#e09530] rounded-xl hover:shadow-lg hover:shadow-[#f4b860]/25 transition-all"

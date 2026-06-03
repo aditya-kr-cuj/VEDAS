@@ -111,6 +111,7 @@ export async function registerInstituteAdmin(payload: {
       id: registered.tenant.id,
       name: registered.tenant.name,
       slug: registered.tenant.slug,
+      tenantCode: registered.tenant.tenant_code,
       subdomain: registered.tenant.subdomain,
       customDomain: registered.tenant.custom_domain,
       planKey: registered.tenant.plan_key
@@ -131,7 +132,7 @@ export async function registerInstituteAdmin(payload: {
   };
 }
 
-export async function login(payload: { email: string; password: string }) {
+export async function login(payload: { email: string; password: string; tenantCode?: string }) {
   const user = await findUserByEmail(payload.email);
 
   if (!user) {
@@ -145,6 +146,24 @@ export async function login(payload: { email: string; password: string }) {
   const matches = await comparePassword(payload.password, user.password_hash);
   if (!matches) {
     throw new HttpError(401, 'Invalid credentials');
+  }
+
+  // For non-super-admin users, validate tenant code
+  if (user.role !== 'super_admin') {
+    if (!payload.tenantCode) {
+      throw new HttpError(400, 'Institute code is required');
+    }
+    const { findTenantByCode } = await import('../tenants/tenant.repository.js');
+    const tenant = await findTenantByCode(payload.tenantCode);
+    if (!tenant) {
+      throw new HttpError(401, 'Invalid institute code');
+    }
+    if (user.tenant_id !== tenant.id) {
+      throw new HttpError(401, 'Invalid credentials for this institute');
+    }
+    if (!tenant.is_active) {
+      throw new HttpError(403, 'This institute has been suspended. Contact support.');
+    }
   }
 
   const accessToken = signAccessToken(toAuthPayload(user));
@@ -166,6 +185,7 @@ export async function login(payload: { email: string; password: string }) {
     }
   };
 }
+
 
 export async function refreshAccessToken(payload: { refreshToken: string }) {
   const tokenHash = sha256(payload.refreshToken);

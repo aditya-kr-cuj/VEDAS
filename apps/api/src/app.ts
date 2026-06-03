@@ -40,11 +40,19 @@ import { budgetRouter } from './modules/budget/budget.routes.js';
 
 export function buildApp() {
   const app = express();
+  const allowedOrigins = env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
 
   app.use(helmet());
   app.use(
     cors({
-      origin: env.CORS_ORIGIN,
+      origin: (origin, callback) => {
+        // Allow non-browser requests (curl, server-to-server) and whitelisted browser origins.
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      },
       credentials: true
     })
   );
