@@ -37,18 +37,10 @@ export default function LoginPage() {
   const onSubmit = async (values: FormValues) => {
     setError(null);
     try {
-      await login(values.email, values.password, values.tenantCode);
-      const stored = window.localStorage.getItem("vedas_user");
-      const role = stored ? (JSON.parse(stored) as { role?: string }).role : undefined;
-      if (role === "student") {
-        router.push("/portal/student");
-        return;
-      }
-      if (role === "teacher") {
-        router.push("/portal/teacher");
-        return;
-      }
-      router.push("/dashboard");
+      const user = await login(values.email, values.password, values.tenantCode);
+      if (user.role === "student") router.push("/portal/student");
+      else if (user.role === "teacher") router.push("/portal/teacher");
+      else router.push("/dashboard");
     } catch (err) {
       const message =
         typeof err === "object" && err && "response" in err

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 import { api } from "./api";
 
 export type AuthUser = {
@@ -17,55 +17,67 @@ type AuthContextValue = {
   accessToken: string | null;
   refreshToken: string | null;
   isLoading: boolean;
-  login: (email: string, password: string, tenantCode?: string) => Promise<void>;
+  login: (email: string, password: string, tenantCode?: string) => Promise<AuthUser>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const ACCESS_KEY = "vedas_access_token";
-const REFRESH_KEY = "vedas_refresh_token";
-const USER_KEY = "vedas_user";
+export const ACCESS_KEY = "vedas_access_token";
+export const REFRESH_KEY = "vedas_refresh_token";
+export const USER_KEY = "vedas_user";
 
-function readLocalStorage(key: string) {
+function readSessionStorage(key: string) {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(key);
+  return window.sessionStorage.getItem(key);
 }
 
-function writeLocalStorage(key: string, value: string | null) {
+function writeSessionStorage(key: string, value: string | null) {
   if (typeof window === "undefined") return;
   if (!value) {
-    window.localStorage.removeItem(key);
+    window.sessionStorage.removeItem(key);
     return;
   }
-  window.localStorage.setItem(key, value);
+  window.sessionStorage.setItem(key, value);
+}
+
+function clearLegacyLocalAuth() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(USER_KEY);
+  window.localStorage.removeItem(ACCESS_KEY);
+  window.localStorage.removeItem(REFRESH_KEY);
 }
 
 export function getStoredAccessToken() {
-  return readLocalStorage(ACCESS_KEY);
+  return readSessionStorage(ACCESS_KEY);
+}
+
+export function getStoredUser() {
+  const storedUser = readSessionStorage(USER_KEY);
+  if (!storedUser) return null;
+  try {
+    return JSON.parse(storedUser) as AuthUser;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: AuthUser) {
+  writeSessionStorage(USER_KEY, JSON.stringify(user));
+}
+
+export function clearStoredAuth() {
+  writeSessionStorage(USER_KEY, null);
+  writeSessionStorage(ACCESS_KEY, null);
+  writeSessionStorage(REFRESH_KEY, null);
+  clearLegacyLocalAuth();
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const storedUser = readLocalStorage(USER_KEY);
-    const storedAccess = readLocalStorage(ACCESS_KEY);
-    const storedRefresh = readLocalStorage(REFRESH_KEY);
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser) as AuthUser);
-      } catch {
-        setUser(null);
-      }
-    }
-    setAccessToken(storedAccess);
-    setRefreshToken(storedRefresh);
-    setIsLoading(false);
-  }, []);
+  const [user, setUser] = useState<AuthUser | null>(() => getStoredUser());
+  const [accessToken, setAccessToken] = useState<string | null>(() => readSessionStorage(ACCESS_KEY));
+  const [refreshToken, setRefreshToken] = useState<string | null>(() => readSessionStorage(REFRESH_KEY));
+  const [isLoading] = useState(false);
 
   const login = async (email: string, password: string, tenantCode?: string) => {
     const response = await api.post("/auth/login", { email, password, tenantCode });
@@ -74,8 +86,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const nextAccess = payload.tokens?.accessToken as string;
     const nextRefresh = payload.tokens?.refreshToken as string;
 
-    writeLocalStorage(ACCESS_KEY, nextAccess);
-    writeLocalStorage(REFRESH_KEY, nextRefresh);
+    clearLegacyLocalAuth();
+    writeSessionStorage(ACCESS_KEY, nextAccess);
+    writeSessionStorage(REFRESH_KEY, nextRefresh);
 
     if (nextUser.tenantId) {
       try {
@@ -92,16 +105,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(nextUser);
     setAccessToken(nextAccess);
     setRefreshToken(nextRefresh);
-    writeLocalStorage(USER_KEY, JSON.stringify(nextUser));
+    setStoredUser(nextUser);
+    return nextUser;
   };
 
   const logout = () => {
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
-    writeLocalStorage(USER_KEY, null);
-    writeLocalStorage(ACCESS_KEY, null);
-    writeLocalStorage(REFRESH_KEY, null);
+    clearStoredAuth();
   };
 
   const value = useMemo(

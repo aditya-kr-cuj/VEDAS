@@ -3,7 +3,7 @@
 import { Menu } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { getStoredUser, useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { PortalSidebar } from "@/components/portal-sidebar";
 import { cn } from "@/lib/utils";
@@ -14,9 +14,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const [menuOpen, setMenuOpen] = useState(false);
   const [storedRole] = useState<string | undefined>(() => {
     if (typeof window === "undefined") return undefined;
-    const userStr = localStorage.getItem("vedas_user");
-    const storedUser = userStr ? (JSON.parse(userStr) as { role?: string }) : null;
-    return storedUser?.role;
+    return getStoredUser()?.role;
   });
 
   useEffect(() => {
@@ -24,8 +22,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       return;
     }
 
-    const userStr = localStorage.getItem("vedas_user");
-    const storedUser = userStr ? (JSON.parse(userStr) as { role?: string }) : null;
+    const storedUser = getStoredUser();
 
     if (!accessToken || !storedUser) {
       router.replace("/portal-login");

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { clearStoredAuth, useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,26 +30,18 @@ export default function PortalLoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password, instituteCode);
-
-      // Check stored role matches selection
-      const stored = window.localStorage.getItem("vedas_user");
-      const user = stored ? (JSON.parse(stored) as { role?: string }) : null;
+      const user = await login(email, password, instituteCode);
       const role = user?.role;
 
       if (loginAs === "student" && role !== "student") {
-        window.localStorage.removeItem("vedas_user");
-        window.localStorage.removeItem("vedas_access_token");
-        window.localStorage.removeItem("vedas_refresh_token");
+        clearStoredAuth();
         throw new Error(
           "This account is not a student. Please select the correct role or use the Institute Admin login."
         );
       }
 
       if (loginAs === "teacher" && role !== "teacher") {
-        window.localStorage.removeItem("vedas_user");
-        window.localStorage.removeItem("vedas_access_token");
-        window.localStorage.removeItem("vedas_refresh_token");
+        clearStoredAuth();
         throw new Error(
           "This account is not a teacher. Please select the correct role or use the Institute Admin login."
         );
