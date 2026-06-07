@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BarChart3, BookOpen, CalendarDays, ClipboardList, QrCode } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +36,25 @@ type StudentFee = {
   frequency: string;
 };
 
+type StudentProfile = {
+  id: string;
+  rollNumber?: string | null;
+  className?: string | null;
+};
+
+type StudentTest = {
+  id: string;
+  title: string;
+  status: string;
+  start_time: string | null;
+  end_time: string | null;
+  duration_minutes: number;
+};
+
+type PerformanceOverview = {
+  average_score?: number | string | null;
+};
+
 export default function StudentPortalPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -43,8 +64,10 @@ export default function StudentPortalPage() {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [courses, setCourses] = useState<Array<{ id: string; name: string }>>([]);
-  const [studentId, setStudentId] = useState<string | null>(null);
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [fees, setFees] = useState<StudentFee[]>([]);
+  const [tests, setTests] = useState<StudentTest[]>([]);
+  const [performanceOverview, setPerformanceOverview] = useState<PerformanceOverview | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
 
@@ -56,25 +79,37 @@ export default function StudentPortalPage() {
 
     const load = async () => {
       try {
-        const [notesRes, studentRes, courseRes, feeRes] = await Promise.all([
+        const [notesRes, studentRes, courseRes, feeRes, testsRes] = await Promise.all([
           api.get("/notifications/my"),
           api.get("/students/me"),
           api.get("/courses"),
-          api.get("/fees/my")
+          api.get("/fees/my"),
+          api.get("/student/tests")
         ]);
         setNotifications(notesRes.data.notifications ?? []);
         setCourses(courseRes.data.courses ?? []);
         setFees(feeRes.data.fees ?? []);
+        setTests(testsRes.data.tests ?? []);
+        setStudentProfile(studentRes.data.student ?? null);
         const id = studentRes.data.student?.id;
-        setStudentId(id);
         if (id) {
-          const attRes = await api.get(`/attendance/student/${id}`);
-          setAttendance(attRes.data.records ?? []);
+          const [attRes, performanceRes] = await Promise.allSettled([
+            api.get(`/attendance/student/${id}`),
+            api.get(`/student/${id}/performance/overview`)
+          ]);
+          if (attRes.status === "fulfilled") {
+            setAttendance(attRes.value.data.records ?? []);
+          }
+          if (performanceRes.status === "fulfilled") {
+            setPerformanceOverview(performanceRes.value.data ?? null);
+          }
         }
       } catch {
         setNotifications([]);
         setAttendance([]);
         setFees([]);
+        setTests([]);
+        setPerformanceOverview(null);
       }
     };
     load();
@@ -105,6 +140,19 @@ export default function StudentPortalPage() {
     if (["present", "late", "excused"].includes(record.status)) acc[key].present += 1;
     return acc;
   }, {});
+  const testsAttempted = tests.filter((test) => test.status === "completed").length;
+  const averageScore =
+    performanceOverview?.average_score === null || performanceOverview?.average_score === undefined
+      ? "N/A"
+      : `${Math.round(Number(performanceOverview.average_score))}%`;
+  const pendingFees = fees.reduce((sum, fee) => sum + Number(fee.due_amount || 0), 0);
+  const upcomingTests = tests
+    .filter((test) => test.start_time && new Date(test.start_time) > new Date())
+    .sort((a, b) => Number(new Date(a.start_time ?? 0)) - Number(new Date(b.start_time ?? 0)))
+    .slice(0, 3);
+  const recentAnnouncements = notifications.slice(0, 3);
+  const batchName = studentProfile?.className ?? "Batch not assigned";
+  const performanceBars = Object.entries(byCourse).slice(0, 4);
 
   const payOnline = async (fee: StudentFee) => {
     try {
@@ -138,12 +186,157 @@ export default function StudentPortalPage() {
         <CardHeader>
           <CardTitle>Welcome back, {user?.fullName ?? "Student"}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-slate-300">Your profile and notifications will appear here.</p>
+        <CardContent className="space-y-1">
+          <p className="text-sm text-slate-300">
+            Batch: {batchName} | Institute: {user?.tenantName ?? "Your Institute"}
+          </p>
+          <p className="text-xs text-slate-400">Track tests, attendance, materials, fees, announcements, and performance.</p>
         </CardContent>
       </Card>
 
-      <Card>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: "Attendance %", value: `${percent}%`, hint: `${attendanceStats.present}/${attendanceStats.total} present` },
+          { label: "Tests Attempted", value: testsAttempted, hint: `${tests.length} total tests` },
+          { label: "Average Score", value: averageScore, hint: "from published results" },
+          { label: "Pending Fees", value: `₹${pendingFees}`, hint: fees.length === 0 ? "no records" : "total due" }
+        ].map((stat) => (
+          <Card key={stat.label} className="p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{stat.label}</p>
+            <p className="mt-3 text-3xl font-semibold text-white">{stat.value}</p>
+            <p className="mt-1 text-xs text-slate-400">{stat.hint}</p>
+          </Card>
+        ))}
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Tests</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {upcomingTests.length === 0 ? (
+              <p className="text-sm text-slate-400">No upcoming tests.</p>
+            ) : (
+              upcomingTests.map((test) => {
+                const start = new Date(test.start_time ?? "");
+                const days = Math.max(0, Math.ceil((start.getTime() - Date.now()) / 86400000));
+                return (
+                  <div key={test.id} className="rounded-lg border border-white/10 p-3">
+                    <p className="font-semibold text-white">{test.title}</p>
+                    <p className="text-xs text-slate-400">
+                      {start.toLocaleString()} • {days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} left`}
+                    </p>
+                  </div>
+                );
+              })
+            )}
+            <Link href="/portal/student/tests">
+              <Button variant="outline" className="gap-2">
+                <ClipboardList className="size-4" aria-hidden="true" />
+                My Tests
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Announcements</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recentAnnouncements.length === 0 ? (
+              <p className="text-sm text-slate-400">No announcements yet.</p>
+            ) : (
+              recentAnnouncements.map((note) => (
+                <div key={note.id} className="rounded-lg border border-white/10 p-3">
+                  <p className="font-semibold text-white">{note.subject}</p>
+                  <p className="line-clamp-2 text-xs text-slate-400">{note.body}</p>
+                </div>
+              ))
+            )}
+            <Link href="/portal/student/announcements">
+              <Button variant="outline">Open Notice Board</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card id="timetable">
+          <CardHeader>
+            <CardTitle>Today&apos;s Timetable</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-slate-400">Timetable entries will appear here when your batch schedule is assigned.</p>
+            <Button variant="outline" className="gap-2">
+              <CalendarDays className="size-4" aria-hidden="true" />
+              View Schedule
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <Link href="/portal/student/tests">
+              <Button className="w-full justify-start gap-2" variant="outline">
+                <ClipboardList className="size-4" aria-hidden="true" />
+                Open Tests
+              </Button>
+            </Link>
+            <Link href="/portal/student/materials">
+              <Button className="w-full justify-start gap-2" variant="outline">
+                <BookOpen className="size-4" aria-hidden="true" />
+                Study Materials
+              </Button>
+            </Link>
+            <Link href="/portal/student/qr">
+              <Button className="w-full justify-start gap-2" variant="outline">
+                <QrCode className="size-4" aria-hidden="true" />
+                QR Attendance
+              </Button>
+            </Link>
+            <Link href="/portal/student/performance">
+              <Button className="w-full justify-start gap-2" variant="outline">
+                <BarChart3 className="size-4" aria-hidden="true" />
+                Performance
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Performance Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {performanceBars.length === 0 ? (
+              <p className="text-sm text-slate-400">Performance data will appear after attendance and test records are available.</p>
+            ) : (
+              performanceBars.map(([courseId, stats]) => {
+                const courseName = courses.find((c) => c.id === courseId)?.name ?? "Unknown";
+                const pct = stats.total === 0 ? 0 : Math.round((stats.present / stats.total) * 100);
+                return (
+                  <div key={courseId}>
+                    <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                      <span>{courseName}</span>
+                      <span>{pct}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/10">
+                      <div className="h-2 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <Card id="attendance">
         <CardHeader>
           <CardTitle>Attendance Summary</CardTitle>
         </CardHeader>
@@ -161,9 +354,9 @@ export default function StudentPortalPage() {
             Use the QR token provided by your teacher to mark attendance.
           </p>
           <div className="mt-3">
-            <a href="/portal/student/qr" className="underline text-sm text-white">
+            <Link href="/portal/student/qr" className="underline text-sm text-white">
               Open QR Scanner
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -175,9 +368,9 @@ export default function StudentPortalPage() {
         <CardContent>
           <p className="text-sm text-slate-400">Browse resources shared by your teachers.</p>
           <div className="mt-3">
-            <a href="/portal/student/materials" className="underline text-sm text-white">
+            <Link href="/portal/student/materials" className="underline text-sm text-white">
               Open Materials Library
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -189,14 +382,14 @@ export default function StudentPortalPage() {
         <CardContent>
           <p className="text-sm text-slate-400">View upcoming and completed assessments.</p>
           <div className="mt-3">
-            <a href="/portal/student/tests" className="underline text-sm text-white">
+            <Link href="/portal/student/tests" className="underline text-sm text-white">
               Open Tests
-            </a>
+            </Link>
           </div>
           <div className="mt-2">
-            <a href="/portal/student/performance" className="underline text-xs text-blue-300">
+            <Link href="/portal/student/performance" className="underline text-xs text-blue-300">
               Performance Dashboard
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -208,14 +401,14 @@ export default function StudentPortalPage() {
         <CardContent>
           <p className="text-sm text-slate-400">Check the latest institute notices.</p>
           <div className="mt-3">
-            <a href="/portal/student/announcements" className="underline text-sm text-white">
+            <Link href="/portal/student/announcements" className="underline text-sm text-white">
               Open Notice Board
-            </a>
+            </Link>
           </div>
           <div className="mt-2">
-            <a href="/portal/settings/notifications" className="underline text-xs text-blue-300">
+            <Link href="/portal/settings/notifications" className="underline text-xs text-blue-300">
               Notification Settings
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -242,7 +435,7 @@ export default function StudentPortalPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="fees">
         <CardHeader>
           <CardTitle>Fees & Payments</CardTitle>
         </CardHeader>
@@ -286,7 +479,7 @@ export default function StudentPortalPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="profile">
         <CardHeader>
           <CardTitle>Profile</CardTitle>
         </CardHeader>

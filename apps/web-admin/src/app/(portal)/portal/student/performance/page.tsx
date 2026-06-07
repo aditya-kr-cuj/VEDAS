@@ -10,7 +10,7 @@ export default function StudentPerformancePage() {
   const [trend, setTrend] = useState<any>(null);
 
   useEffect(() => {
-    api.get("/student/me").then(async (res) => {
+    api.get("/students/me").then(async (res) => {
       const id = res.data.student?.id;
       if (!id) return;
       const [overviewRes, trendRes] = await Promise.all([

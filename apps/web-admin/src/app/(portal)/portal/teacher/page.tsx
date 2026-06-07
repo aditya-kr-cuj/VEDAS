@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CalendarDays, CheckSquare, ClipboardList, FileUp, PlusCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,12 +36,28 @@ type Availability = {
   reason: string | null;
 };
 
+type Test = {
+  id: string;
+  title: string;
+  status: string;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+type StudentSummary = {
+  id: string;
+  fullName?: string;
+  full_name?: string;
+};
+
 export default function TeacherPortalPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [availability, setAvailability] = useState<Availability[]>([]);
+  const [tests, setTests] = useState<Test[]>([]);
+  const [students, setStudents] = useState<StudentSummary[]>([]);
   const [schedule, setSchedule] = useState<
     Array<{
       id: string;
@@ -62,23 +80,20 @@ export default function TeacherPortalPage() {
     }
 
     const load = async () => {
-      try {
-        const [notesRes, slotsRes, availRes, scheduleRes] = await Promise.all([
-          api.get("/notifications/my"),
-          api.get("/time-slots"),
-          api.get(`/teachers/${user?.id}/availability`),
-          api.get(`/timetable/teacher/${user?.id}`),
-        ]);
-        setNotifications(notesRes.data.notifications ?? []);
-        setTimeSlots(slotsRes.data.slots ?? []);
-        setAvailability(availRes.data.availability ?? []);
-        setSchedule(scheduleRes.data.entries ?? []);
-      } catch {
-        setNotifications([]);
-        setTimeSlots([]);
-        setAvailability([]);
-        setSchedule([]);
-      }
+      const [notesRes, slotsRes, availRes, scheduleRes, testsRes, studentsRes] = await Promise.allSettled([
+        api.get("/notifications/my"),
+        api.get("/time-slots"),
+        api.get(`/teachers/${user?.id}/availability`),
+        api.get(`/timetable/teacher/${user?.id}`),
+        api.get("/tests"),
+        api.get("/students"),
+      ]);
+      setNotifications(notesRes.status === "fulfilled" ? notesRes.value.data.notifications ?? [] : []);
+      setTimeSlots(slotsRes.status === "fulfilled" ? slotsRes.value.data.slots ?? [] : []);
+      setAvailability(availRes.status === "fulfilled" ? availRes.value.data.availability ?? [] : []);
+      setSchedule(scheduleRes.status === "fulfilled" ? scheduleRes.value.data.entries ?? [] : []);
+      setTests(testsRes.status === "fulfilled" ? testsRes.value.data.tests ?? [] : []);
+      setStudents(studentsRes.status === "fulfilled" ? studentsRes.value.data.students ?? [] : []);
     };
     load();
   }, [user, router]);
@@ -173,63 +188,127 @@ export default function TeacherPortalPage() {
     setQrExpires(res.data.expiresAt);
   };
 
+  const uniqueBatches = Array.from(
+    new Map(schedule.map((entry) => [entry.batchName, { name: entry.batchName, course: entry.courseName }])).values()
+  );
+  const pendingEvaluations = tests.filter((test) => test.status === "completed").length;
+  const todaysDay = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+  const todaysClasses = schedule.filter((entry) => entry.dayOfWeek.toLowerCase() === todaysDay);
+  const recentTests = tests.slice(0, 3);
+  const recentAnnouncements = notifications.slice(0, 3);
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Welcome back, {user?.fullName ?? "Teacher"}</CardTitle>
+          <CardTitle>Welcome, {user?.fullName ?? "Teacher"}!</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-slate-300">Your teaching summary and notices live here.</p>
+        <CardContent className="space-y-1">
+          <p className="text-sm text-slate-300">Institute: {user?.tenantName ?? "Your Institute"}</p>
+          <p className="text-xs text-slate-400">Manage your classes, tests, materials, attendance, and student progress.</p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div>
-              <Label>Name</Label>
-              <Input value={fullName} onChange={(event) => setFullName(event.target.value)} />
-            </div>
-            <div>
-              <Label>Email</Label>
-              <Input value={user?.email ?? ""} readOnly />
-            </div>
-            {saveStatus && <p className="text-xs text-slate-400">{saveStatus}</p>}
-            <Button onClick={updateProfile}>Save</Button>
-          </div>
-        </CardContent>
-      </Card>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: "My Students", value: students.length, hint: "students visible to you" },
+          { label: "My Batches", value: uniqueBatches.length, hint: "assigned batches" },
+          { label: "Tests Created", value: tests.length, hint: "created assessments" },
+          { label: "Pending Evaluations", value: pendingEvaluations, hint: "completed tests to review" }
+        ].map((stat) => (
+          <Card key={stat.label} className="p-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{stat.label}</p>
+            <p className="mt-3 text-3xl font-semibold text-white">{stat.value}</p>
+            <p className="mt-1 text-xs text-slate-400">{stat.hint}</p>
+          </Card>
+        ))}
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Notifications</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {notifications.length === 0 ? (
-            <p className="text-sm text-slate-400">No notifications yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {notifications.map((note) => (
-                <li key={note.id} className="rounded-lg border border-white/10 p-3">
-                  <p className="font-semibold text-white">{note.subject}</p>
-                  <p className="text-sm text-slate-300">{note.body}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="mt-3">
-            <a href="/portal/settings/notifications" className="underline text-xs text-blue-300">
-              Notification Settings
+      <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            <Button className="justify-start gap-2" onClick={generateQr}>
+              <CheckSquare className="size-4" aria-hidden="true" />
+              Mark Today&apos;s Attendance
+            </Button>
+            <Link href="/tests/new">
+              <Button className="w-full justify-start gap-2" variant="outline">
+                <PlusCircle className="size-4" aria-hidden="true" />
+                Create New Test
+              </Button>
+            </Link>
+            <Link href="/materials/upload">
+              <Button className="w-full justify-start gap-2" variant="outline">
+                <FileUp className="size-4" aria-hidden="true" />
+                Upload Material
+              </Button>
+            </Link>
+            <a href="#timetable">
+              <Button className="w-full justify-start gap-2" variant="outline">
+                <CalendarDays className="size-4" aria-hidden="true" />
+                View Timetable
+              </Button>
             </a>
-          </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recentTests.length === 0 && recentAnnouncements.length === 0 && todaysClasses.length === 0 ? (
+              <p className="text-sm text-slate-400">No recent activity yet.</p>
+            ) : (
+              <>
+                {recentTests.map((test) => (
+                  <div key={test.id} className="rounded-lg border border-white/10 p-3">
+                    <p className="font-semibold text-white">{test.title}</p>
+                    <p className="text-xs text-slate-400">Test status: {test.status}</p>
+                  </div>
+                ))}
+                {recentAnnouncements.map((note) => (
+                  <div key={note.id} className="rounded-lg border border-white/10 p-3">
+                    <p className="font-semibold text-white">{note.subject}</p>
+                    <p className="text-xs text-slate-400">Announcement received</p>
+                  </div>
+                ))}
+                {todaysClasses.map((entry) => (
+                  <div key={entry.id} className="rounded-lg border border-white/10 p-3">
+                    <p className="font-semibold text-white">{entry.courseName}</p>
+                    <p className="text-xs text-slate-400">
+                      Today, {entry.startTime} - {entry.endTime} • {entry.batchName}
+                    </p>
+                  </div>
+                ))}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <Card id="classes">
+        <CardHeader>
+          <CardTitle>My Classes</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2">
+          {uniqueBatches.length === 0 ? (
+            <p className="text-sm text-slate-400">No batches assigned yet.</p>
+          ) : (
+            uniqueBatches.map((batch) => (
+              <div key={batch.name} className="rounded-lg border border-white/10 p-3">
+                <p className="font-semibold text-white">{batch.name}</p>
+                <p className="text-xs text-slate-400">{batch.course ?? "Course not assigned"}</p>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="timetable">
         <CardHeader>
           <CardTitle>Timetable</CardTitle>
         </CardHeader>
@@ -259,6 +338,78 @@ export default function TeacherPortalPage() {
       </Card>
 
       <Card>
+        <CardHeader>
+          <CardTitle>Tests</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {tests.length === 0 ? (
+            <p className="text-sm text-slate-400">No tests created yet.</p>
+          ) : (
+            recentTests.map((test) => (
+              <div key={test.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 p-3">
+                <div>
+                  <p className="font-semibold text-white">{test.title}</p>
+                  <p className="text-xs text-slate-400">{test.start_time ? new Date(test.start_time).toLocaleString() : "No schedule"}</p>
+                </div>
+                <span className="rounded-full bg-white/10 px-2 py-1 text-xs uppercase text-slate-300">{test.status}</span>
+              </div>
+            ))
+          )}
+          <Link href="/tests">
+            <Button variant="outline" className="gap-2">
+              <ClipboardList className="size-4" aria-hidden="true" />
+              Manage Tests
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card id="announcements">
+        <CardHeader>
+          <CardTitle>Announcements</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {notifications.length === 0 ? (
+            <p className="text-sm text-slate-400">No announcements yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {notifications.map((note) => (
+                <li key={note.id} className="rounded-lg border border-white/10 p-3">
+                  <p className="font-semibold text-white">{note.subject}</p>
+                  <p className="text-sm text-slate-300">{note.body}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-3">
+            <Link href="/portal/settings/notifications" className="text-xs text-blue-300 underline">
+              Notification Settings
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card id="profile">
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div>
+              <Label>Name</Label>
+              <Input value={fullName} onChange={(event) => setFullName(event.target.value)} />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input value={user?.email ?? ""} readOnly />
+            </div>
+            {saveStatus && <p className="text-xs text-slate-400">{saveStatus}</p>}
+            <Button onClick={updateProfile}>Save</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card id="attendance">
         <CardHeader>
           <CardTitle>QR Attendance</CardTitle>
         </CardHeader>

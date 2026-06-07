@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { api } from "@/lib/api";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { accessToken, isLoading, user: authUser } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [instituteName, setInstituteName] = useState<string | undefined>(authUser?.tenantName);
 
@@ -28,14 +29,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
 
+    if (user.role === "teacher") {
+      const teacherAllowedPaths = ["/attendance", "/questions", "/tests", "/materials", "/reports", "/calendar"];
+      if (teacherAllowedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+        return;
+      }
+      router.replace("/portal/teacher");
+      return;
+    }
+
     if (user.role !== "institute_admin") {
-      if (user.role === "student" || user.role === "teacher") {
+      if (user.role === "student") {
         router.replace("/portal/student");
         return;
       }
       router.replace("/login");
     }
-  }, [accessToken, isLoading, router]);
+  }, [accessToken, isLoading, pathname, router]);
 
   useEffect(() => {
     if (authUser?.tenantName) {
