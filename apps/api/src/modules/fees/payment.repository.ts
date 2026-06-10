@@ -159,11 +159,16 @@ export async function listPaymentsForStudent(payload: {
   tenantId: string;
   studentId: string;
 }) {
-  return query<PaymentRecord>(
+  return query<
+    PaymentRecord & {
+      fee_structure_name: string;
+    }
+  >(
     `
-      SELECT p.*
+      SELECT p.*, fs.name AS fee_structure_name
       FROM fee_payments p
       JOIN student_fees sf ON sf.id = p.student_fee_id
+      JOIN fee_structures fs ON fs.id = sf.fee_structure_id
       WHERE p.tenant_id = $1 AND sf.student_id = $2
       ORDER BY p.payment_date DESC, p.created_at DESC
     `,

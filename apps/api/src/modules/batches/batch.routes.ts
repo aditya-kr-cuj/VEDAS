@@ -62,7 +62,7 @@ batchRouter.get(
   '/:id/students',
   authenticate,
   requireTenant,
-  authorize(['institute_admin']),
+  authorize(['institute_admin', 'teacher']),
   validateParams(batchIdParamSchema),
   asyncHandler(listBatchStudentsHandler)
 );

@@ -37,6 +37,20 @@ export async function markAttendanceBulk(payload: {
     const results: Array<{ studentId: string; status: string }> = [];
 
     for (const entry of payload.attendance) {
+      const studentResult = await client.query<{ id: string }>(
+        `
+          SELECT id
+          FROM students
+          WHERE tenant_id = $1 AND (id = $2 OR user_id = $2)
+          LIMIT 1
+        `,
+        [payload.tenantId, entry.studentId]
+      );
+      const studentId = studentResult.rows[0]?.id;
+      if (!studentId) {
+        throw new HttpError(404, `Student profile not found: ${entry.studentId}`);
+      }
+
       // Optional: ensure student belongs to batch if mapping exists
       const membershipResult = await client.query<{ id: string }>(
         `
@@ -46,7 +60,7 @@ export async function markAttendanceBulk(payload: {
           WHERE bs.batch_id = $1 AND s.id = $2
           LIMIT 1
         `,
-        [payload.batchId, entry.studentId]
+        [payload.batchId, studentId]
       );
       const membership = membershipResult.rows[0];
       if (!membership) {
@@ -67,7 +81,7 @@ export async function markAttendanceBulk(payload: {
             payload.tenantId,
             payload.batchId,
             payload.courseId ?? null,
-            entry.studentId,
+            studentId,
             payload.teacherId,
             payload.date,
             payload.timeSlotId,
@@ -89,7 +103,7 @@ export async function markAttendanceBulk(payload: {
             payload.teacherId,
             payload.tenantId,
             payload.batchId,
-            entry.studentId,
+            studentId,
             payload.date
           ]
         );
@@ -106,7 +120,7 @@ export async function markAttendanceBulk(payload: {
               payload.tenantId,
               payload.batchId,
               payload.courseId ?? null,
-              entry.studentId,
+              studentId,
               payload.teacherId,
               payload.date,
               entry.status,
@@ -116,7 +130,7 @@ export async function markAttendanceBulk(payload: {
         }
       }
 
-      results.push({ studentId: entry.studentId, status: entry.status });
+      results.push({ studentId, status: entry.status });
     }
 
     return results;

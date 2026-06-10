@@ -2,7 +2,12 @@ import { Router } from 'express';
 import { asyncHandler } from '../../middleware/async-handler.js';
 import { authenticate, authorize, requireTenant } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate.js';
-import { assignFeeStructureHandler, createFeeStructureHandler, listFeeStructuresHandler } from './fee.controller.js';
+import {
+  assignFeeStructureHandler,
+  createFeeStructureHandler,
+  listFeeStructuresHandler,
+  listStudentFeesHandler
+} from './fee.controller.js';
 import { assignFeeSchema, createFeeStructureSchema, createPaymentLinkSchema, recordPaymentSchema } from './fee.schema.js';
 import {
   listPaymentHistoryHandler,
@@ -15,6 +20,7 @@ import {
   listOverdueFeesHandler,
   monthlyReportHandler,
   myFeesHandler,
+  myPaymentsHandler,
   studentStatementHandler,
   summaryReportHandler
 } from './fee-report.controller.js';
@@ -37,6 +43,14 @@ feeRouter.get(
   requireTenant,
   authorize(['institute_admin']),
   asyncHandler(listFeeStructuresHandler)
+);
+
+feeRouter.get(
+  '/student-fees/list',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'staff']),
+  asyncHandler(listStudentFeesHandler)
 );
 
 feeRouter.post(
@@ -119,6 +133,14 @@ feeRouter.get(
   requireTenant,
   authorize(['student']),
   asyncHandler(myFeesHandler)
+);
+
+feeRouter.get(
+  '/my-payments',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(myPaymentsHandler)
 );
 
 feeRouter.get(

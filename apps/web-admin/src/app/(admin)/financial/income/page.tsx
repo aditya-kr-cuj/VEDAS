@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,7 +110,7 @@ export default function OtherIncomePage() {
       await api.delete(`/financial/income/${id}`);
       await load(page);
     } catch {
-      alert("Failed to delete record.");
+      toast.error("Failed to delete record.");
     } finally {
       setDeletingId(null);
     }

@@ -50,6 +50,13 @@ type StudentSummary = {
   full_name?: string;
 };
 
+type TeacherStats = {
+  totalStudents: number;
+  totalBatches: number;
+  testsCreated: number;
+  pendingEvaluations: number;
+};
+
 export default function TeacherPortalPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -58,6 +65,7 @@ export default function TeacherPortalPage() {
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
   const [students, setStudents] = useState<StudentSummary[]>([]);
+  const [stats, setStats] = useState<TeacherStats | null>(null);
   const [schedule, setSchedule] = useState<
     Array<{
       id: string;
@@ -80,7 +88,8 @@ export default function TeacherPortalPage() {
     }
 
     const load = async () => {
-      const [notesRes, slotsRes, availRes, scheduleRes, testsRes, studentsRes] = await Promise.allSettled([
+      const [dashboardRes, notesRes, slotsRes, availRes, scheduleRes, testsRes, studentsRes] = await Promise.allSettled([
+        api.get("/portal/teacher/dashboard"),
         api.get("/notifications/my"),
         api.get("/time-slots"),
         api.get(`/teachers/${user?.id}/availability`),
@@ -88,6 +97,7 @@ export default function TeacherPortalPage() {
         api.get("/tests"),
         api.get("/students"),
       ]);
+      setStats(dashboardRes.status === "fulfilled" ? dashboardRes.value.data.data ?? null : null);
       setNotifications(notesRes.status === "fulfilled" ? notesRes.value.data.notifications ?? [] : []);
       setTimeSlots(slotsRes.status === "fulfilled" ? slotsRes.value.data.slots ?? [] : []);
       setAvailability(availRes.status === "fulfilled" ? availRes.value.data.availability ?? [] : []);
@@ -191,7 +201,7 @@ export default function TeacherPortalPage() {
   const uniqueBatches = Array.from(
     new Map(schedule.map((entry) => [entry.batchName, { name: entry.batchName, course: entry.courseName }])).values()
   );
-  const pendingEvaluations = tests.filter((test) => test.status === "completed").length;
+  const pendingEvaluations = stats?.pendingEvaluations ?? tests.filter((test) => test.status === "completed").length;
   const todaysDay = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
   const todaysClasses = schedule.filter((entry) => entry.dayOfWeek.toLowerCase() === todaysDay);
   const recentTests = tests.slice(0, 3);
@@ -211,9 +221,9 @@ export default function TeacherPortalPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "My Students", value: students.length, hint: "students visible to you" },
-          { label: "My Batches", value: uniqueBatches.length, hint: "assigned batches" },
-          { label: "Tests Created", value: tests.length, hint: "created assessments" },
+          { label: "My Students", value: stats?.totalStudents ?? students.length, hint: "students in assigned batches" },
+          { label: "My Batches", value: stats?.totalBatches ?? uniqueBatches.length, hint: "assigned batches" },
+          { label: "Tests Created", value: stats?.testsCreated ?? tests.length, hint: "created assessments" },
           { label: "Pending Evaluations", value: pendingEvaluations, hint: "completed tests to review" }
         ].map((stat) => (
           <Card key={stat.label} className="p-5">

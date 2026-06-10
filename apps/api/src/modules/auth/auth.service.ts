@@ -2,6 +2,7 @@ import { withTransaction } from '../../db/client.js';
 import { comparePassword, generateSecureToken, hashPassword, sha256 } from '../../utils/crypto.js';
 import { HttpError } from '../../utils/http-error.js';
 import { createTenant } from '../tenants/tenant.repository.js';
+import { findTenantById } from '../tenants/tenant.repository.js';
 import {
   bumpUserTokenVersion,
   createUser,
@@ -149,6 +150,7 @@ export async function login(payload: { email: string; password: string; tenantCo
   }
 
   // For non-super-admin users, validate tenant code
+  let tenantName: string | null = null;
   if (user.role !== 'super_admin') {
     if (!payload.tenantCode) {
       throw new HttpError(400, 'Institute code is required');
@@ -164,6 +166,10 @@ export async function login(payload: { email: string; password: string; tenantCo
     if (!tenant.is_active) {
       throw new HttpError(403, 'This institute has been suspended. Contact support.');
     }
+    tenantName = tenant.name;
+  } else if (user.tenant_id) {
+    const tenant = await findTenantById(user.tenant_id);
+    tenantName = tenant?.name ?? null;
   }
 
   const accessToken = signAccessToken(toAuthPayload(user));
@@ -176,6 +182,8 @@ export async function login(payload: { email: string; password: string; tenantCo
       fullName: user.full_name,
       email: user.email,
       role: user.role,
+      tenantName,
+      tenant_name: tenantName,
       emailVerified: user.email_verified
     },
     tokens: {

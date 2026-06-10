@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Summary = {
@@ -15,6 +16,7 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [batchCount, setBatchCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const instituteName = getStoredUser()?.tenantName ?? "Your Institute";
 
   useEffect(() => {
     const load = async () => {
@@ -46,7 +48,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Overview</p>
-        <h2 className="mt-2 text-2xl font-semibold">Dashboard</h2>
+        <h2 className="mt-2 text-2xl font-semibold text-white">{instituteName}</h2>
         <p className="mt-1 text-sm text-slate-400">Quick snapshot of your institute activity.</p>
       </div>
 

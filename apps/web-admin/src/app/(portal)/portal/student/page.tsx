@@ -55,6 +55,13 @@ type PerformanceOverview = {
   average_score?: number | string | null;
 };
 
+type StudentDashboardStats = {
+  attendancePercentage: number;
+  testsAttempted: number;
+  averageScore: number;
+  pendingFees: number;
+};
+
 export default function StudentPortalPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -68,6 +75,7 @@ export default function StudentPortalPage() {
   const [fees, setFees] = useState<StudentFee[]>([]);
   const [tests, setTests] = useState<StudentTest[]>([]);
   const [performanceOverview, setPerformanceOverview] = useState<PerformanceOverview | null>(null);
+  const [dashboardStats, setDashboardStats] = useState<StudentDashboardStats | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [payingFeeId, setPayingFeeId] = useState<string | null>(null);
 
@@ -79,13 +87,15 @@ export default function StudentPortalPage() {
 
     const load = async () => {
       try {
-        const [notesRes, studentRes, courseRes, feeRes, testsRes] = await Promise.all([
+        const [dashboardRes, notesRes, studentRes, courseRes, feeRes, testsRes] = await Promise.all([
+          api.get("/portal/student/dashboard"),
           api.get("/notifications/my"),
           api.get("/students/me"),
           api.get("/courses"),
           api.get("/fees/my"),
           api.get("/student/tests")
         ]);
+        setDashboardStats(dashboardRes.data.data ?? null);
         setNotifications(notesRes.data.notifications ?? []);
         setCourses(courseRes.data.courses ?? []);
         setFees(feeRes.data.fees ?? []);
@@ -196,10 +206,10 @@ export default function StudentPortalPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Attendance %", value: `${percent}%`, hint: `${attendanceStats.present}/${attendanceStats.total} present` },
-          { label: "Tests Attempted", value: testsAttempted, hint: `${tests.length} total tests` },
-          { label: "Average Score", value: averageScore, hint: "from published results" },
-          { label: "Pending Fees", value: `₹${pendingFees}`, hint: fees.length === 0 ? "no records" : "total due" }
+          { label: "Attendance %", value: `${dashboardStats?.attendancePercentage ?? percent}%`, hint: `${attendanceStats.present}/${attendanceStats.total} present` },
+          { label: "Tests Attempted", value: dashboardStats?.testsAttempted ?? testsAttempted, hint: `${tests.length} total tests` },
+          { label: "Average Score", value: dashboardStats ? `${dashboardStats.averageScore}%` : averageScore, hint: "from published results" },
+          { label: "Pending Fees", value: `₹${dashboardStats?.pendingFees ?? pendingFees}`, hint: fees.length === 0 ? "no records" : "total due" }
         ].map((stat) => (
           <Card key={stat.label} className="p-5">
             <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{stat.label}</p>

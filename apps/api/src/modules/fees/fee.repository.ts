@@ -91,3 +91,50 @@ export async function assignFeeStructure(payload: {
     }
   });
 }
+
+export async function listStudentFees(payload: {
+  tenantId: string;
+  status?: string;
+  search?: string;
+}) {
+  const where = ['sf.tenant_id = $1'];
+  const values: string[] = [payload.tenantId];
+  let idx = 2;
+
+  if (payload.status) {
+    where.push(`sf.status = $${idx++}::fee_status`);
+    values.push(payload.status);
+  }
+
+  if (payload.search) {
+    where.push(`(u.full_name ILIKE $${idx} OR u.email ILIKE $${idx} OR fs.name ILIKE $${idx})`);
+    values.push(`%${payload.search}%`);
+  }
+
+  return query(
+    `
+      SELECT DISTINCT ON (sf.id)
+        sf.id AS student_fee_id,
+        sf.student_id,
+        u.id AS student_user_id,
+        sf.total_amount,
+        sf.paid_amount,
+        sf.due_amount,
+        sf.status,
+        sf.due_date,
+        u.full_name AS student_name,
+        u.email AS student_email,
+        fs.name AS fee_structure_name,
+        b.name AS batch_name
+      FROM student_fees sf
+      JOIN students s ON sf.student_id = s.id
+      JOIN users u ON s.user_id = u.id
+      JOIN fee_structures fs ON sf.fee_structure_id = fs.id
+      LEFT JOIN batch_students bs ON bs.student_id = s.id
+      LEFT JOIN batches b ON bs.batch_id = b.id
+      WHERE ${where.join(' AND ')}
+      ORDER BY sf.id, sf.due_date ASC
+    `,
+    values
+  );
+}

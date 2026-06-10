@@ -42,7 +42,7 @@ attendanceRouter.get(
   '/student/:studentId',
   authenticate,
   requireTenant,
-  authorize(['institute_admin', 'teacher']),
+  authorize(['institute_admin', 'teacher', 'student']),
   validateParams(attendanceStudentParamSchema),
   asyncHandler(listStudentAttendanceHandler)
 );

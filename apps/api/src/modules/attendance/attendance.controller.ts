@@ -6,6 +6,7 @@ import {
   markAttendanceBulk,
   updateAttendanceRecord
 } from './attendance.repository.js';
+import { findStudentProfileByUserId, resolveStudentProfileId } from '../students/student.repository.js';
 
 export async function markAttendanceHandler(req: Request, res: Response): Promise<void> {
   const tenantId = req.tenantId;
@@ -47,9 +48,21 @@ export async function listStudentAttendanceHandler(req: Request, res: Response):
   const tenantId = req.tenantId;
   if (!tenantId) throw new HttpError(400, 'Tenant context is required');
 
+  const studentId = await resolveStudentProfileId(tenantId, req.params.studentId);
+  if (!studentId) {
+    throw new HttpError(404, 'Student profile not found');
+  }
+
+  if (req.role === 'student') {
+    const ownProfile = await findStudentProfileByUserId(tenantId, req.auth?.userId ?? '');
+    if (!ownProfile || ownProfile.id !== studentId) {
+      throw new HttpError(403, 'Access denied');
+    }
+  }
+
   const records = await listAttendanceForStudent({
     tenantId,
-    studentId: req.params.studentId
+    studentId
   });
   res.status(200).json({ records });
 }

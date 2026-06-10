@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -128,7 +129,7 @@ export default function ExpensesPage() {
       await api.delete(`/expenses/${id}`);
       await loadExpenses(page);
     } catch {
-      alert("Failed to delete expense.");
+      toast.error("Failed to delete expense.");
     } finally {
       setDeletingId(null);
     }

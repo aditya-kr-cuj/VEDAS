@@ -1,15 +1,19 @@
 import type { Request, Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { HttpError } from '../../utils/http-error.js';
+import { resolveStudentProfileId } from '../students/student.repository.js';
 import { findPaymentById, getReceiptDetails, listPaymentsForStudent, recordPayment } from './payment.repository.js';
 
 export async function recordPaymentHandler(req: Request, res: Response): Promise<void> {
   const tenantId = req.tenantId;
   if (!tenantId) throw new HttpError(400, 'Tenant context is required');
 
+  const studentId = await resolveStudentProfileId(tenantId, req.body.studentId);
+  if (!studentId) throw new HttpError(404, 'Student profile not found');
+
   const result = await recordPayment({
     tenantId,
-    studentId: req.body.studentId,
+    studentId,
     studentFeeId: req.body.studentFeeId,
     amount: req.body.amount,
     paymentMode: req.body.paymentMode,
@@ -26,9 +30,12 @@ export async function listPaymentHistoryHandler(req: Request, res: Response): Pr
   const tenantId = req.tenantId;
   if (!tenantId) throw new HttpError(400, 'Tenant context is required');
 
+  const studentId = await resolveStudentProfileId(tenantId, req.params.studentId);
+  if (!studentId) throw new HttpError(404, 'Student profile not found');
+
   const payments = await listPaymentsForStudent({
     tenantId,
-    studentId: req.params.studentId
+    studentId
   });
 
   res.status(200).json({ payments });

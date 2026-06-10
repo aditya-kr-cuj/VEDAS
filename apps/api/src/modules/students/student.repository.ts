@@ -47,6 +47,38 @@ export async function findStudentProfileByUserId(
   return rows[0] ?? null;
 }
 
+export async function resolveStudentProfileId(
+  tenantId: string,
+  id: string
+): Promise<string | null> {
+  const rows = await query<{ id: string }>(
+    `
+      SELECT id
+      FROM students
+      WHERE tenant_id = $1 AND (id = $2 OR user_id = $2)
+      LIMIT 1
+    `,
+    [tenantId, id]
+  );
+
+  return rows[0]?.id ?? null;
+}
+
+export async function resolveStudentProfileIds(
+  tenantId: string,
+  ids: string[]
+): Promise<string[]> {
+  const resolved: string[] = [];
+  for (const id of ids) {
+    const profileId = await resolveStudentProfileId(tenantId, id);
+    if (!profileId) {
+      throw new HttpError(404, `Student profile not found: ${id}`);
+    }
+    resolved.push(profileId);
+  }
+  return resolved;
+}
+
 export interface StudentProfile {
   id: string;
   tenantId: string;
@@ -73,6 +105,28 @@ export async function listStudentSummaries(tenantId: string) {
     `,
     [tenantId]
   );
+}
+
+export async function findBatchForStudent(payload: { tenantId: string; studentId: string }) {
+  const rows = await query(
+    `
+      SELECT
+        b.id AS batch_id,
+        b.name AS batch_name,
+        c.id AS course_id,
+        c.name AS course_name,
+        bs.created_at AS assigned_at
+      FROM batch_students bs
+      JOIN batches b ON b.id = bs.batch_id
+      LEFT JOIN courses c ON c.id = b.course_id
+      WHERE b.tenant_id = $1 AND bs.student_id = $2
+      ORDER BY bs.created_at DESC
+      LIMIT 1
+    `,
+    [payload.tenantId, payload.studentId]
+  );
+
+  return rows[0] ?? null;
 }
 
 export async function findStudentById(tenantId: string, studentId: string): Promise<StudentProfile | null> {

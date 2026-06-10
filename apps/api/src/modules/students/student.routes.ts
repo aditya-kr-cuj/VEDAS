@@ -5,11 +5,13 @@ import { validateBody, validateParams } from '../../middleware/validate.js';
 import {
   csvTemplateHandler,
   deleteStudentHandler,
+  getMyStudentBatchHandler,
   getMyStudentProfileHandler,
+  getStudentBatchHandler,
   getStudentHandler,
   listStudentsHandler,
-  updateStudentHandler,
-  bulkUploadStudentsHandler
+  bulkUploadStudentsHandler,
+  updateStudentHandler
 } from './student.controller.js';
 import { studentIdParamSchema, updateStudentSchema } from './student.schema.js';
 import multer from 'multer';
@@ -42,6 +44,31 @@ studentRouter.get(
   authenticate,
   requireTenant,
   asyncHandler(getMyStudentProfileHandler)
+);
+
+studentRouter.get(
+  '/my-profile',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(getMyStudentProfileHandler)
+);
+
+studentRouter.get(
+  '/my-batch',
+  authenticate,
+  requireTenant,
+  authorize(['student']),
+  asyncHandler(getMyStudentBatchHandler)
+);
+
+studentRouter.get(
+  '/:id/batch',
+  authenticate,
+  requireTenant,
+  authorize(['institute_admin', 'teacher', 'student']),
+  validateParams(studentIdParamSchema),
+  asyncHandler(getStudentBatchHandler)
 );
 
 studentRouter.get(

@@ -30,27 +30,27 @@ type PortalSidebarProps = {
 };
 
 const teacherItems = [
-  { label: "Dashboard", href: "/portal/teacher", icon: Home },
-  { label: "Attendance", href: "/portal/teacher#attendance", icon: CheckSquare },
-  { label: "My Classes", href: "/portal/teacher#classes", icon: Users },
-  { label: "Questions", href: "/questions", icon: FileQuestion },
-  { label: "Tests", href: "/tests", icon: ClipboardList },
-  { label: "Materials", href: "/materials", icon: Files },
+  { label: "Dashboard", href: "/portal/teacher/dashboard", icon: Home },
+  { label: "Attendance", href: "/portal/teacher/attendance", icon: CheckSquare },
+  { label: "My Classes", href: "/portal/teacher/timetable", icon: Users },
+  { label: "Questions", href: "/portal/teacher/questions", icon: FileQuestion },
+  { label: "Tests", href: "/portal/teacher/tests", icon: ClipboardList },
+  { label: "Materials", href: "/portal/teacher/materials", icon: Files },
   { label: "Performance", href: "/portal/teacher/performance", icon: BarChart3 },
-  { label: "Announcements", href: "/portal/teacher#announcements", icon: Bell },
-  { label: "Timetable", href: "/portal/teacher#timetable", icon: CalendarDays },
-  { label: "Profile", href: "/portal/teacher#profile", icon: User }
+  { label: "Announcements", href: "/portal/teacher/announcements", icon: Bell },
+  { label: "Timetable", href: "/portal/teacher/timetable", icon: CalendarDays },
+  { label: "Profile", href: "/portal/teacher/profile", icon: User }
 ];
 
 const studentItems = [
-  { label: "Dashboard", href: "/portal/student", icon: Home },
+  { label: "Dashboard", href: "/portal/student/dashboard", icon: Home },
   { label: "My Tests", href: "/portal/student/tests", icon: ClipboardList },
   { label: "Study Materials", href: "/portal/student/materials", icon: Files },
-  { label: "My Attendance", href: "/portal/student#attendance", icon: CheckSquare },
-  { label: "My Fees", href: "/portal/student#fees", icon: CreditCard },
+  { label: "My Attendance", href: "/portal/student/attendance", icon: CheckSquare },
+  { label: "My Fees", href: "/portal/student/fees", icon: CreditCard },
   { label: "Performance", href: "/portal/student/performance", icon: BarChart3 },
   { label: "Announcements", href: "/portal/student/announcements", icon: Bell },
-  { label: "Timetable", href: "/portal/student#timetable", icon: CalendarDays },
+  { label: "Timetable", href: "/portal/student/timetable", icon: CalendarDays },
   { label: "Profile", href: "/portal/student#profile", icon: User }
 ];
 

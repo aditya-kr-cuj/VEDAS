@@ -19,6 +19,7 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [name, setName] = useState("");
   const [subjectCode, setSubjectCode] = useState("");
   const [description, setDescription] = useState("");
@@ -46,6 +47,15 @@ export default function CoursesPage() {
     setName("");
     setSubjectCode("");
     setDescription("");
+    setEditingCourse(null);
+  };
+
+  const openEdit = (course: Course) => {
+    setEditingCourse(course);
+    setName(course.name);
+    setSubjectCode(course.subject_code ?? "");
+    setDescription(course.description ?? "");
+    setDialogOpen(true);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -65,12 +75,17 @@ export default function CoursesPage() {
 
     setSaving(true);
     try {
-      await api.post("/courses", {
+      const payload = {
         name: name.trim(),
         subjectCode: subjectCode.trim(),
-        ...(description.trim() ? { description: description.trim() } : {}),
-      });
-      setMessage("Course added successfully.");
+        description: description.trim() || undefined,
+      };
+      if (editingCourse) {
+        await api.put(`/courses/${editingCourse.id}`, payload);
+      } else {
+        await api.post("/courses", payload);
+      }
+      setMessage(editingCourse ? "Course updated successfully." : "Course added successfully.");
       resetForm();
       setDialogOpen(false);
       await loadCourses();
@@ -79,9 +94,26 @@ export default function CoursesPage() {
         typeof err === "object" && err && "response" in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : undefined;
-      setError(apiMessage ?? "Could not add course.");
+      setError(apiMessage ?? (editingCourse ? "Could not update course." : "Could not add course."));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteCourse = async (course: Course) => {
+    if (!window.confirm(`Delete ${course.name}?`)) return;
+    setError(null);
+    setMessage(null);
+    try {
+      await api.delete(`/courses/${course.id}`);
+      setMessage("Course deleted successfully.");
+      await loadCourses();
+    } catch (err: unknown) {
+      const apiMessage =
+        typeof err === "object" && err && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      setError(apiMessage ?? "Could not delete course.");
     }
   };
 
@@ -92,7 +124,14 @@ export default function CoursesPage() {
           <h2 className="text-2xl font-semibold">Courses</h2>
           <p className="mt-2 text-sm text-slate-400">Create and manage courses here.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>Add Course</Button>
+        <Button
+          onClick={() => {
+            resetForm();
+            setDialogOpen(true);
+          }}
+        >
+          Add Course
+        </Button>
       </div>
 
       {message && (
@@ -125,6 +164,14 @@ export default function CoursesPage() {
                 <p className="font-mono text-sm text-[#86e3ce]">{course.subject_code ?? "No code"}</p>
                 {course.description && <p className="text-sm text-slate-400">{course.description}</p>}
                 <p className="text-xs text-slate-500">{course.is_active ? "Active" : "Inactive"}</p>
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" size="sm" onClick={() => openEdit(course)}>
+                    Edit
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => deleteCourse(course)}>
+                    Delete
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))
@@ -135,8 +182,10 @@ export default function CoursesPage() {
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-950 p-6 shadow-2xl">
             <div className="mb-5">
-              <h3 className="text-xl font-semibold">Add Course</h3>
-              <p className="mt-1 text-sm text-slate-400">Create a course for this institute.</p>
+              <h3 className="text-xl font-semibold">{editingCourse ? "Edit Course" : "Add Course"}</h3>
+              <p className="mt-1 text-sm text-slate-400">
+                {editingCourse ? "Update this course for the institute." : "Create a course for this institute."}
+              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -184,7 +233,7 @@ export default function CoursesPage() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={saving}>
-                  {saving ? "Saving..." : "Save Course"}
+                  {saving ? "Saving..." : editingCourse ? "Save Changes" : "Save Course"}
                 </Button>
               </div>
             </form>

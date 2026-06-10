@@ -9,6 +9,8 @@ import {
   summaryReport,
   listStudentFeesByUser
 } from './fee-report.repository.js';
+import { listPaymentsForStudent } from './payment.repository.js';
+import { findStudentProfileByUserId } from '../students/student.repository.js';
 
 function getRange(req: Request) {
   const from = req.query.from?.toString();
@@ -69,5 +71,20 @@ export async function myFeesHandler(req: Request, res: Response): Promise<void> 
   const userId = req.auth?.userId;
   if (!tenantId || !userId) throw new HttpError(400, 'Tenant context is required');
   const rows = await listStudentFeesByUser(tenantId, userId);
-  res.status(200).json({ fees: rows });
+  res.status(200).json({ success: true, data: rows, fees: rows });
+}
+
+export async function myPaymentsHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  const userId = req.auth?.userId;
+  if (!tenantId || !userId) throw new HttpError(400, 'Tenant context is required');
+
+  const student = await findStudentProfileByUserId(tenantId, userId);
+  if (!student) {
+    res.status(200).json({ success: true, data: [], payments: [] });
+    return;
+  }
+
+  const payments = await listPaymentsForStudent({ tenantId, studentId: student.id });
+  res.status(200).json({ success: true, data: payments, payments });
 }

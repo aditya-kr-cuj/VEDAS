@@ -21,7 +21,7 @@ export async function createRoom(payload: {
   const rows = await query<RoomRecord>(
     `
       INSERT INTO rooms (tenant_id, room_name, room_type, capacity, is_available)
-      VALUES ($1, $2, COALESCE($3, 'classroom'), COALESCE($4, 0), COALESCE($5, TRUE))
+      VALUES ($1, $2, COALESCE($3, 'classroom')::room_type, COALESCE($4, 0), COALESCE($5, TRUE))
       RETURNING *
     `,
     [
@@ -74,7 +74,7 @@ export async function updateRoom(payload: {
       UPDATE rooms
       SET
         room_name = COALESCE($1, room_name),
-        room_type = COALESCE($2, room_type),
+        room_type = COALESCE($2::room_type, room_type),
         capacity = COALESCE($3, capacity),
         is_available = COALESCE($4, is_available),
         updated_at = NOW()

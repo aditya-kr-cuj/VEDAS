@@ -1,6 +1,12 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../../utils/http-error.js';
-import { findStudentById, softDeleteStudent, updateStudentProfile, listStudentSummaries } from './student.repository.js';
+import {
+  findBatchForStudent,
+  findStudentById,
+  softDeleteStudent,
+  updateStudentProfile,
+  listStudentSummaries
+} from './student.repository.js';
 import { parseCsvToRows } from '../../utils/csv.js';
 import { createTenantUser } from '../auth/auth.service.js';
 import { z } from 'zod';
@@ -64,6 +70,16 @@ export async function getMyStudentProfileHandler(req: Request, res: Response): P
   }
 
   res.status(200).json({
+    success: true,
+    data: {
+      id: student.id,
+      tenantId: student.tenant_id,
+      userId: student.user_id,
+      rollNumber: student.roll_number,
+      className: student.class_name,
+      guardianName: student.guardian_name,
+      guardianPhone: student.guardian_phone
+    },
     student: {
       id: student.id,
       tenantId: student.tenant_id,
@@ -74,6 +90,42 @@ export async function getMyStudentProfileHandler(req: Request, res: Response): P
       guardianPhone: student.guardian_phone
     }
   });
+}
+
+export async function getMyStudentBatchHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  const userId = req.auth?.userId;
+  if (!tenantId || !userId) {
+    throw new HttpError(400, 'Tenant context is required');
+  }
+
+  const student = await findStudentProfileByUserId(tenantId, userId);
+  if (!student) {
+    throw new HttpError(404, 'Student profile not found');
+  }
+
+  const batch = await findBatchForStudent({ tenantId, studentId: student.id });
+  res.status(200).json({ success: true, data: batch, batch });
+}
+
+export async function getStudentBatchHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  const userId = req.auth?.userId;
+  if (!tenantId) {
+    throw new HttpError(400, 'Tenant context is required');
+  }
+
+  let studentId = req.params.id;
+  if (req.role === 'student') {
+    const student = await findStudentProfileByUserId(tenantId, userId ?? '');
+    if (!student || (student.id !== req.params.id && student.user_id !== req.params.id)) {
+      throw new HttpError(403, 'Access denied');
+    }
+    studentId = student.id;
+  }
+
+  const batch = await findBatchForStudent({ tenantId, studentId });
+  res.status(200).json({ success: true, data: batch, batch });
 }
 
 export async function listStudentsHandler(req: Request, res: Response): Promise<void> {

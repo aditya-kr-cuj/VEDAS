@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { HttpError } from '../../utils/http-error.js';
-import { assignFeeStructure, createFeeStructure, listFeeStructures } from './fee.repository.js';
+import { resolveStudentProfileIds } from '../students/student.repository.js';
+import { assignFeeStructure, createFeeStructure, listFeeStructures, listStudentFees } from './fee.repository.js';
 
 export async function createFeeStructureHandler(req: Request, res: Response): Promise<void> {
   const tenantId = req.tenantId;
@@ -36,9 +37,21 @@ export async function assignFeeStructureHandler(req: Request, res: Response): Pr
   await assignFeeStructure({
     tenantId,
     feeStructureId: req.body.feeStructureId,
-    studentIds: req.body.studentIds,
+    studentIds: await resolveStudentProfileIds(tenantId, req.body.studentIds),
     dueDate: req.body.dueDate
   });
 
   res.status(200).json({ message: 'Fees assigned' });
+}
+
+export async function listStudentFeesHandler(req: Request, res: Response): Promise<void> {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new HttpError(400, 'Tenant context is required');
+
+  const fees = await listStudentFees({
+    tenantId,
+    status: req.query.status?.toString(),
+    search: req.query.search?.toString()
+  });
+  res.status(200).json({ success: true, data: fees, fees });
 }
